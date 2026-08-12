@@ -38,3 +38,13 @@ export const atanDegrees = (ratio: number): number =>
 export const atan2Degrees = (y: number, x: number): number | null =>
   x === 0 && y === 0 ? null : normalizeDegrees360(radiansToDegrees(Math.atan2(y, x)));
 
+export const getQuadrant = (x: number, y: number): string => {
+  if (x === 0 && y === 0) return "origin";
+  if (y === 0) return x > 0 ? "+X axis" : "−X axis";
+  if (x === 0) return y > 0 ? "+Y axis" : "−Y axis";
+  if (x > 0 && y > 0) return "I";
+  if (x < 0 && y > 0) return "II";
+  if (x < 0 && y < 0) return "III";
+  return "IV";
+};
+
