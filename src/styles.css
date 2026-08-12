@@ -56,8 +56,8 @@ main { width: min(1440px, 100%); margin: 0 auto; padding: 0 clamp(16px, 4vw, 64p
 .intro-copy { max-width: 490px; margin: 0 0 4px; color: var(--muted); font-size: clamp(1rem, 1.4vw, 1.2rem); line-height: 1.65; }
 .intro-copy strong { color: var(--ink); }
 
-.lesson-tabs { display: flex; align-items: stretch; gap: 8px; margin-bottom: 18px; }
-.lesson-tab { display: flex; align-items: center; gap: 11px; min-height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); font-size: 0.82rem; font-weight: 800; cursor: pointer; transition: 160ms ease; }
+.lesson-tabs { display: flex; align-items: stretch; gap: 8px; margin-bottom: 18px; padding-bottom: 4px; overflow-x: auto; scrollbar-width: thin; }
+.lesson-tab { display: flex; flex: 0 0 auto; align-items: center; gap: 9px; min-height: 48px; padding: 0 15px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); font-size: 0.76rem; font-weight: 800; cursor: pointer; transition: 160ms ease; }
 .lesson-tab span { color: #9aa5b6; font-size: 0.65rem; }
 .lesson-tab:hover { border-color: #aeb9c9; transform: translateY(-1px); }
 .lesson-tab.is-active { border-color: var(--ink); background: var(--ink); color: white; box-shadow: 0 7px 20px rgba(20, 34, 58, 0.14); }
@@ -76,10 +76,11 @@ main { width: min(1440px, 100%); margin: 0 auto; padding: 0 clamp(16px, 4vw, 64p
 .vector-plot { display: block; width: 100%; max-height: 66vh; min-height: 440px; touch-action: none; }
 .grid-lines line { stroke: #e9edf3; stroke-width: 1; }
 .axis-lines line { stroke: #8c98aa; stroke-width: 1.35; }
-.axis-lines marker path { fill: #8c98aa; }
+.axis-lines marker path, #axis-arrow path { fill: #8c98aa; }
 .axis-ticks line { stroke: #a7b0be; stroke-width: 1; }
 .axis-ticks text { fill: #9aa4b3; font-size: 9px; text-anchor: middle; }
 .axis-ticks .y-tick { text-anchor: end; }
+.unit-axis-ticks { display: none; }.unit-axis-ticks text { fill: var(--r); font-size: 11px; font-weight: 850; text-anchor: middle; paint-order: stroke; stroke: #fcfdff; stroke-width: 5px; }.unit-axis-ticks .y-tick { text-anchor: end; }
 .quadrant-wash rect { fill: transparent; transition: fill 180ms ease; }
 .vector-plot[data-lesson="quadrants"] .quadrant-wash .q1 { fill: rgba(7, 134, 95, 0.027); }
 .vector-plot[data-lesson="quadrants"] .quadrant-wash .q2 { fill: rgba(23, 105, 224, 0.027); }
@@ -94,8 +95,15 @@ main { width: min(1440px, 100%); margin: 0 auto; padding: 0 clamp(16px, 4vw, 64p
 #y-arrow path { fill: var(--y); }
 #resultant { stroke: var(--r); stroke-width: 7; stroke-linecap: round; transition: opacity 180ms ease; }
 #r-arrow path { fill: var(--r); }
-.vector-plot[data-lesson="tangent"] #resultant { opacity: 0.72; }
-.vector-plot[data-lesson="tangent"] #r-label { opacity: 0.7; }
+.vector-plot[data-relation="sine"] #x-component, .vector-plot[data-relation="sine"] #x-label { opacity: 0.2; }
+.vector-plot[data-relation="cosine"] #y-component, .vector-plot[data-relation="cosine"] #y-label { opacity: 0.2; }
+.vector-plot[data-relation="tangent"] #resultant, .vector-plot[data-relation="tangent"] #r-label, .vector-plot[data-relation="tangent"] #reference-circle { opacity: 0.25; }
+.vector-plot[data-lesson="unit-circle"] #reference-circle { opacity: 1; stroke: var(--r); stroke-width: 2.4; stroke-dasharray: 6 5; }
+.vector-plot[data-lesson="unit-circle"] #right-angle { opacity: .45; }
+.vector-plot[data-lesson="unit-circle"] .axis-ticks { display: none; }
+.vector-plot[data-lesson="unit-circle"] .unit-axis-ticks { display: block; }
+.vector-plot[data-lesson="unit-circle"] .grid-lines { opacity: .32; }
+#x-component, #y-component, #resultant, #x-label, #y-label, #r-label, #reference-circle { transition: opacity 180ms ease, stroke-width 180ms ease; }
 #right-angle { fill: none; stroke: var(--ink); stroke-width: 1.8; }
 #angle-arc { fill: none; stroke: var(--angle); stroke-width: 3; stroke-linecap: round; }
 #angle-label { fill: var(--angle); font-size: 12px; font-weight: 850; text-anchor: middle; paint-order: stroke; stroke: #fcfdff; stroke-width: 5px; stroke-linejoin: round; }
@@ -126,7 +134,7 @@ main { width: min(1440px, 100%); margin: 0 auto; padding: 0 clamp(16px, 4vw, 64p
 .metric-r .metric-symbol { color: var(--r); background: var(--r-soft); }.metric-r strong { color: var(--r); }
 .metric-angle .metric-symbol { color: var(--angle); background: var(--angle-soft); }.metric-angle strong { color: var(--angle); }
 
-.component-controls { margin: 0; padding: 21px 28px 27px; border-top: 1px solid var(--line); background: #fbfcfe; }
+.vector-controls { margin: 0; padding: 21px 28px 27px; border-top: 1px solid var(--line); background: #fbfcfe; }
 .control-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
 .control-heading p:not(.card-kicker) { margin: -4px 0 0; color: var(--muted); font-size: 0.68rem; }
 .reset-button, #flip-button { border: 0; background: none; color: var(--ink); font-size: 0.68rem; font-weight: 800; text-decoration: underline; text-decoration-color: #b9c1cd; text-underline-offset: 3px; cursor: pointer; }
@@ -134,10 +142,13 @@ main { width: min(1440px, 100%); margin: 0 auto; padding: 0 clamp(16px, 4vw, 64p
 .component-input { padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: white; transition: border-color 160ms ease, box-shadow 160ms ease; }
 .component-input:focus-within { box-shadow: 0 0 0 3px rgba(23,105,224,.08); }
 .component-input > span { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+.component-input > span b { color: inherit; font-size: inherit; }
 .component-input i { display: inline-block; width: 15px; height: 3px; border-radius: 2px; }
 .component-input div { display: flex; align-items: baseline; gap: 7px; }
 .component-input input { width: 100%; min-width: 0; padding: 5px 0 0; border: 0; outline: 0; background: transparent; font-size: 1.26rem; font-weight: 850; font-variant-numeric: tabular-nums; }
-.component-input b { color: #9aa4b3; font-size: 0.62rem; }
+.component-input em { color: #9aa4b3; font-size: 0.62rem; font-style: normal; font-weight: 700; white-space: nowrap; }
+.input-row.is-unit-locked { position: relative; }
+.input-row.is-unit-locked::after { position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; border: 1px dashed #9fc9b8; border-radius: 10px; background: rgba(246, 252, 249, .94); color: #21634d; font-size: .69rem; font-weight: 800; text-align: center; content: "Radius is fixed at 1 · rotate with the endpoint or angle controls"; }
 .input-x i { background: var(--x); }.input-x input { color: var(--x); }.input-x:focus-within { border-color: var(--x); }
 .input-y i { background: var(--y); }.input-y input { color: var(--y); }.input-y:focus-within { border-color: var(--y); }
 
@@ -247,3 +258,94 @@ footer p { max-width: 620px; margin: 0; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
 
+/* Shared controls added as the full learning path expands. */
+.angle-control { margin-top: 14px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.angle-control-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.angle-control-heading > label { display: flex; align-items: center; gap: 8px; font-size: .69rem; font-weight: 850; text-transform: uppercase; letter-spacing: .055em; }
+.angle-swatch { display: grid; width: 27px; height: 27px; place-items: center; border-radius: 7px; background: var(--angle-soft); color: var(--angle); font-family: Georgia, serif; font-size: 1rem; }
+.angle-format { display: flex; padding: 3px; border-radius: 8px; background: #eef1f5; }
+.angle-format button { padding: 6px 9px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: .61rem; font-weight: 800; cursor: pointer; }
+.angle-format button[aria-pressed="true"] { background: white; color: var(--angle); box-shadow: 0 1px 4px rgba(31,48,74,.12); }
+.angle-control-row { display: grid; grid-template-columns: 1fr 88px; align-items: center; gap: 14px; }
+#angle-slider { width: 100%; height: 24px; margin: 0; accent-color: var(--angle); cursor: ew-resize; }
+.angle-number { display: flex; align-items: center; border: 1px solid #dfc28f; border-radius: 8px; background: var(--angle-soft); overflow: hidden; }
+.angle-number input { width: 100%; min-width: 0; padding: 8px 3px 8px 9px; border: 0; outline: 0; background: transparent; color: var(--angle); font-size: .82rem; font-weight: 850; text-align: right; font-variant-numeric: tabular-nums; }
+.angle-number span { padding-right: 9px; color: var(--angle); font-size: .76rem; font-weight: 800; }
+.special-angle-row { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.special-angle-row > span { margin-right: 3px; color: var(--muted); font-size: .57rem; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }
+.special-angle-row button { min-width: 37px; min-height: 27px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fafbfd; color: var(--muted); font-size: .59rem; font-weight: 800; cursor: pointer; }
+.special-angle-row button:hover { border-color: var(--angle); color: var(--angle); }
+.origin-angle-note { margin: 10px 0 0; color: var(--angle); font-size: .62rem; line-height: 1.4; }
+
+.live-equation { margin: 4px 0 0; font-family: "SFMono-Regular", Consolas, monospace; font-size: clamp(.78rem, 1vw, .94rem); font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.55; }
+.live-equation mark { padding: 0; background: none; }
+.r-text { color: var(--r) !important; }
+.ratio-r strong { color: var(--r); }
+.ratio-y .mini-line { width: 3px; height: 15px; background: var(--y); }
+.ratio-x .mini-line { width: 15px; height: 3px; background: var(--x); }
+.ratio-r .mini-line { width: 15px; height: 3px; background: var(--r); transform: rotate(-28deg); }
+
+.side-key { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 24px 28px 18px; }
+.side-key > div { display: grid; grid-template-columns: 30px 1fr; align-items: center; gap: 0 8px; min-width: 0; padding: 13px 11px; border: 1px solid var(--line); border-radius: 10px; }
+.side-key span { grid-row: 1 / 3; font-size: 1.2rem; font-weight: 900; }
+.side-key strong { font-size: .69rem; }.side-key small { color: var(--muted); font-size: .53rem; }
+.side-key .key-x span, .side-key .key-x strong { color: var(--x); }.side-key .key-y span, .side-key .key-y strong { color: var(--y); }.side-key .key-r span, .side-key .key-r strong { color: var(--r); }
+
+.equation-card { margin: 18px 28px; padding: 17px 18px; border: 1px solid var(--line); border-radius: 11px; background: #f8fafc; }
+.equation-card > small, .inverse-question > small { color: var(--muted); font-size: .59rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.equation-card .live-equation + .live-equation { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+.inverse-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 22px 28px 0; padding: 4px; border-radius: 10px; background: #edf1f5; }
+.inverse-selector button { min-height: 38px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-family: "SFMono-Regular", Consolas, monospace; font-size: .73rem; font-weight: 800; cursor: pointer; }
+.inverse-selector button[aria-pressed="true"] { background: white; color: var(--angle); box-shadow: 0 2px 8px rgba(31,49,75,.1); }
+.inverse-selector sup { font-size: .65em; }
+.inverse-question { margin: 18px 28px; padding: 15px 16px; border-left: 3px solid var(--angle); background: var(--angle-soft); }
+.inverse-question p { margin: 6px 0 0; color: #6a4a1d; font-size: .76rem; line-height: 1.5; }.inverse-question b { color: var(--angle); }
+.principal-compare { display: grid; grid-template-columns: 1fr 24px 1fr; align-items: center; gap: 8px; margin: 18px 28px; }
+.principal-compare > div { display: grid; gap: 3px; padding: 12px; border: 1px solid var(--line); border-radius: 9px; }
+.principal-compare small { color: var(--muted); font-size: .54rem; font-weight: 750; text-transform: uppercase; }.principal-compare strong { color: var(--angle); font-size: .88rem; }.principal-compare > span { color: #a2abb8; text-align: center; }
+.inverse-note code { padding: 1px 4px; border-radius: 4px; background: rgba(255,255,255,.7); }
+
+.unit-identity { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 24px 28px; }
+.unit-identity > div { display: grid; gap: 5px; padding: 16px; border: 1px solid var(--line); border-radius: 11px; }
+.unit-identity small { color: var(--muted); font-size: .57rem; text-transform: uppercase; font-weight: 750; }.unit-identity strong { font-family: "SFMono-Regular", Consolas, monospace; font-size: .8rem; }.unit-identity b { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.unit-identity .key-x strong, .unit-identity .key-x b { color: var(--x); }.unit-identity .key-y strong, .unit-identity .key-y b { color: var(--y); }
+
+.unit-control { display: flex; align-items: center; gap: 10px; margin: 20px 28px; }
+.unit-control label { color: var(--muted); font-size: .63rem; font-weight: 800; text-transform: uppercase; }
+.unit-control select { min-height: 36px; padding: 0 30px 0 10px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); font-size: .7rem; font-weight: 800; }
+.unit-control button { margin-left: auto; min-height: 36px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; background: #f8fafc; color: var(--ink); font-size: .63rem; font-weight: 800; cursor: pointer; }
+.delta-equations > small:not(:first-child) { display: block; margin-top: 17px; padding-top: 14px; border-top: 1px solid var(--line); }
+.delta-equations b { color: var(--muted); font-family: inherit; font-size: .68em; }
+.convention-card { margin: 18px 28px; padding: 16px 17px; border: 1px solid #e5c684; border-radius: 11px; background: #fffaf0; }
+.convention-card > strong { color: #66440f; font-size: .76rem; }.convention-card ul { margin: 11px 0; padding-left: 18px; color: #755a30; font-size: .66rem; line-height: 1.65; }.convention-card > p:not(.card-kicker) { margin: 10px 0; color: #755a30; font-size: .64rem; line-height: 1.55; }.convention-card a { color: #75500d; font-size: .62rem; font-weight: 800; text-underline-offset: 3px; }
+.warning-note { border-color: var(--y); background: var(--y-soft); }.warning-note > span { color: var(--y); font-weight: 900; }.warning-note p, .warning-note p strong { color: #7a3236; }
+
+body[data-lesson="delta-v"] .metric-symbol { font-family: inherit; font-size: .75rem; }
+body[data-lesson="delta-v"] .metric-x .metric-symbol::after { content: "ΔVx"; } body[data-lesson="delta-v"] .metric-y .metric-symbol::after { content: "ΔVy"; } body[data-lesson="delta-v"] .metric-r .metric-symbol::after { content: "Σ"; }
+body[data-lesson="delta-v"] .metric-x .metric-symbol, body[data-lesson="delta-v"] .metric-y .metric-symbol, body[data-lesson="delta-v"] .metric-r .metric-symbol { font-size: 0; }
+body[data-lesson="delta-v"] .metric-x .metric-symbol::after, body[data-lesson="delta-v"] .metric-y .metric-symbol::after, body[data-lesson="delta-v"] .metric-r .metric-symbol::after { font-size: .68rem; }
+
+@media (max-width: 1080px) {
+  .lesson-content { display: block; }
+  .lesson-panel { max-width: none; }
+}
+
+@media (max-width: 720px) {
+  .vector-controls { padding: 18px; }
+  .side-key, .equation-card, .inverse-selector, .inverse-question, .principal-compare, .unit-identity, .unit-control, .convention-card { margin-left: 18px; margin-right: 18px; }
+  .side-key { grid-template-columns: 1fr; }
+  .angle-control-heading { align-items: flex-start; }
+  .special-angle-row { display: none; }
+}
+
+@media (max-width: 430px) {
+  .vector-controls { padding-inline: 12px; }
+  .angle-control { padding: 13px 11px; }
+  .angle-control-heading { display: grid; }
+  .angle-format { justify-self: start; }
+  .angle-control-row { grid-template-columns: 1fr 76px; gap: 8px; }
+  .unit-identity { grid-template-columns: 1fr; }
+  .unit-control { align-items: flex-start; flex-wrap: wrap; }.unit-control button { width: 100%; margin-left: 0; }
+  .principal-compare { grid-template-columns: 1fr; }.principal-compare > span { transform: rotate(90deg); }
+}

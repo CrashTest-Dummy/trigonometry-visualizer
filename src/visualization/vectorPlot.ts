@@ -1,24 +1,31 @@
-import { angleFromCoordinates, vectorMagnitude } from "../math/trig";
+import { angleFromCoordinates, displayAngle, vectorMagnitude, type AngleDisplayMode } from "../math/trig";
 
 export type VectorState = { x: number; y: number };
-export type Lesson = "tangent" | "quadrants";
+export type Lesson = "basics" | "sine" | "cosine" | "tangent" | "inverse" | "quadrants" | "unit-circle" | "delta-v";
+export type Relation = "sine" | "cosine" | "tangent";
+export type PlotOptions = {
+  lesson: Lesson;
+  relation: Relation;
+  angleMode: AngleDisplayMode;
+};
 
 const VIEW_WIDTH = 680;
 const VIEW_HEIGHT = 560;
 const ORIGIN_X = VIEW_WIDTH / 2;
 const ORIGIN_Y = VIEW_HEIGHT / 2;
-const SCALE = 23;
-const MAX_X = 12;
-const MAX_Y = 10;
+const SCALE = 13.5;
+const UNIT_CIRCLE_SCALE = 215;
+const MAX_X = 20;
+const MAX_Y = 15;
 
 const gridLines = (): string => {
   const lines: string[] = [];
-  for (let x = -14; x <= 14; x += 1) {
+  for (let x = -23; x <= 23; x += 1) {
     if (x === 0) continue;
     const px = ORIGIN_X + x * SCALE;
     lines.push(`<line x1="${px}" y1="20" x2="${px}" y2="540" />`);
   }
-  for (let y = -11; y <= 11; y += 1) {
+  for (let y = -19; y <= 19; y += 1) {
     if (y === 0) continue;
     const py = ORIGIN_Y - y * SCALE;
     lines.push(`<line x1="20" y1="${py}" x2="660" y2="${py}" />`);
@@ -28,12 +35,12 @@ const gridLines = (): string => {
 
 const axisTicks = (): string => {
   const ticks: string[] = [];
-  for (let x = -12; x <= 12; x += 2) {
+  for (let x = -20; x <= 20; x += 5) {
     if (x === 0) continue;
     const px = ORIGIN_X + x * SCALE;
     ticks.push(`<line x1="${px}" y1="276" x2="${px}" y2="284" /><text x="${px}" y="300">${x}</text>`);
   }
-  for (let y = -10; y <= 10; y += 2) {
+  for (let y = -15; y <= 15; y += 5) {
     if (y === 0) continue;
     const py = ORIGIN_Y - y * SCALE;
     ticks.push(`<line x1="336" y1="${py}" x2="344" y2="${py}" /><text x="328" y="${py + 4}" class="y-tick">${y}</text>`);
@@ -49,6 +56,7 @@ export const createPlotMarkup = (): string => `
       <marker id="x-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker>
       <marker id="y-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker>
       <marker id="r-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker>
+      <marker id="axis-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" /></marker>
       <clipPath id="plot-clip"><rect x="20" y="20" width="640" height="520" rx="16" /></clipPath>
     </defs>
     <g class="quadrant-wash" clip-path="url(#plot-clip)">
@@ -59,10 +67,14 @@ export const createPlotMarkup = (): string => `
     </g>
     <g class="grid-lines">${gridLines()}</g>
     <g class="axis-lines">
-      <line x1="20" y1="280" x2="660" y2="280" marker-end="url(#x-arrow)" />
-      <line x1="340" y1="540" x2="340" y2="20" marker-end="url(#x-arrow)" />
+      <line x1="20" y1="280" x2="660" y2="280" marker-end="url(#axis-arrow)" />
+      <line x1="340" y1="540" x2="340" y2="20" marker-end="url(#axis-arrow)" />
     </g>
     <g class="axis-ticks">${axisTicks()}</g>
+    <g class="unit-axis-ticks" aria-hidden="true">
+      <text x="555" y="300">+1</text><text x="125" y="300">−1</text>
+      <text x="328" y="69" class="y-tick">+1</text><text x="328" y="499" class="y-tick">−1</text>
+    </g>
     <g class="quadrant-labels" aria-hidden="true">
       <text x="628" y="49">QI</text><text x="44" y="49">QII</text><text x="44" y="523">QIII</text><text x="620" y="523">QIV</text>
       <text x="646" y="302" class="axis-name">+X</text><text x="350" y="35" class="axis-name">+Y</text>
@@ -102,9 +114,9 @@ export const graphToVector = (svgX: number, svgY: number): VectorState =>
     y: (ORIGIN_Y - svgY) / SCALE,
   });
 
-const point = (state: VectorState): { x: number; y: number } => ({
-  x: ORIGIN_X + state.x * SCALE,
-  y: ORIGIN_Y - state.y * SCALE,
+const point = (state: VectorState, scale = SCALE): { x: number; y: number } => ({
+  x: ORIGIN_X + state.x * scale,
+  y: ORIGIN_Y - state.y * scale,
 });
 
 const required = <T extends SVGElement>(id: string): T => {
@@ -135,8 +147,9 @@ const labelPosition = (
   y: (a.y + b.y) / 2 + offsetY,
 });
 
-export const renderVector = (state: VectorState, lesson: Lesson): void => {
-  const endpoint = point(state);
+export const renderVector = (state: VectorState, options: PlotOptions): void => {
+  const renderScale = options.lesson === "unit-circle" ? UNIT_CIRCLE_SCALE : SCALE;
+  const endpoint = point(state, renderScale);
   const magnitude = vectorMagnitude(state.x, state.y);
   const angle = angleFromCoordinates(state.x, state.y);
   const foot = { x: endpoint.x, y: ORIGIN_Y };
@@ -147,7 +160,7 @@ export const renderVector = (state: VectorState, lesson: Lesson): void => {
   setAttributes(required("y-component"), { x1: foot.x, y1: foot.y, x2: endpoint.x, y2: endpoint.y });
   setAttributes(required("resultant"), { x2: endpoint.x, y2: endpoint.y });
   setAttributes(required("endpoint"), { transform: `translate(${endpoint.x} ${endpoint.y})` });
-  setAttributes(required("reference-circle"), { r: magnitude * SCALE });
+  setAttributes(required("reference-circle"), { r: magnitude * renderScale });
 
   const towardOrigin = state.x >= 0 ? -1 : 1;
   const towardEndpoint = state.y >= 0 ? -1 : 1;
@@ -167,7 +180,7 @@ export const renderVector = (state: VectorState, lesson: Lesson): void => {
       x: ORIGIN_X + 76 * Math.cos(labelRadians),
       y: ORIGIN_Y - 76 * Math.sin(labelRadians),
     });
-    required<SVGTextElement>("angle-label").textContent = `θ ${format(angle, 1)}°`;
+    required<SVGTextElement>("angle-label").textContent = `θ ${format(displayAngle(angle, options.angleMode), 1)}°`;
   }
 
   const xLabel = labelPosition(origin, foot, 0, state.y >= 0 ? 25 : -13);
@@ -180,9 +193,15 @@ export const renderVector = (state: VectorState, lesson: Lesson): void => {
   setAttributes(required("x-label"), xLabel);
   setAttributes(required("y-label"), yLabel);
   setAttributes(required("r-label"), rLabel);
-  required<SVGTextElement>("x-label").textContent = `X = ${format(state.x)}`;
-  required<SVGTextElement>("y-label").textContent = `Y = ${format(state.y)}`;
-  required<SVGTextElement>("r-label").textContent = `R = ${format(magnitude)}`;
+  const deltaMode = options.lesson === "delta-v";
+  const unitCircleMode = options.lesson === "unit-circle";
+  required<SVGTextElement>("x-label").textContent = unitCircleMode
+    ? `x = cos θ = ${format(state.x)}`
+    : `${deltaMode ? "ΔVx" : "X"} = ${format(state.x)}`;
+  required<SVGTextElement>("y-label").textContent = unitCircleMode
+    ? `y = sin θ = ${format(state.y)}`
+    : `${deltaMode ? "ΔVy" : "Y"} = ${format(state.y)}`;
+  required<SVGTextElement>("r-label").textContent = `${deltaMode ? "Resultant" : unitCircleMode ? "R" : "R"} = ${format(magnitude)}`;
   required<SVGTextElement>("y-label").setAttribute("text-anchor", state.x >= 0 ? "start" : "end");
   required<SVGTextElement>("r-label").setAttribute("text-anchor", "middle");
 
@@ -194,6 +213,11 @@ export const renderVector = (state: VectorState, lesson: Lesson): void => {
   required<SVGCircleElement>("endpoint-hit").setAttribute("aria-valuetext", `X ${format(state.x)}, Y ${format(state.y)}`);
 
   const plot = required<SVGSVGElement>("vector-plot");
-  plot.dataset.lesson = lesson;
+  plot.dataset.lesson = options.lesson;
+  plot.dataset.relation = options.lesson === "inverse" ? options.relation : options.lesson;
+  required<SVGTitleElement>("plot-title").textContent = deltaMode
+    ? "Longitudinal and lateral Delta-V components with resultant vector"
+    : unitCircleMode
+      ? "Unit circle with cosine and sine endpoint coordinates"
+      : "Interactive vector and right triangle";
 };
-
