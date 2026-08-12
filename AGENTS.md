@@ -18,23 +18,27 @@ This is educational software, not validated forensic software. Never imply that 
 
 ## Stack and architecture
 
-The project uses Vite, TypeScript, native HTML/CSS, and SVG. A framework was intentionally omitted: the first milestone has a compact state model and one interactive view, while native SVG provides precise, accessible geometry with minimal runtime weight. Vitest covers pure calculations. Vite's relative base produces GitHub Pages-compatible asset URLs.
+The project uses Vite, TypeScript, native HTML/CSS, and SVG. A framework was intentionally omitted: the application has a compact canonical vector state and one interactive view, while native SVG provides precise, accessible geometry with minimal runtime weight. Vitest covers pure calculations and browser-like interface behavior through jsdom. Vite's relative base produces GitHub Pages-compatible asset URLs.
 
 - `src/math/` contains pure, DOM-independent math. Never couple these functions to SVG or interface state.
-- UI state and event coordination live in TypeScript modules under `src/`.
+- `src/main.ts` owns the canonical vector state and synchronizes dragging, component entry, angle entry, and lesson modes.
+- `src/ui/` owns lesson definitions, educational copy, and live value mapping.
 - SVG/visual rendering belongs in dedicated rendering functions or modules, separate from pure math.
 - Educational copy belongs near the interface that presents it, not inside mathematical functions.
 - `.github/workflows/` owns deployment configuration.
 
-The canonical vector state is `{ x, y }`. Magnitude, direction, tangent, inverse tangent, and SVG positions are derived. Dragging and numeric entry must update the same canonical state so controls never drift out of sync.
+The canonical vector state is `{ x, y }`. Magnitude, direction, sine, cosine, tangent, inverse relationships, and SVG positions are derived. Dragging, keyboard control, component entry, angle entry, and angle sliders must update the same canonical state so controls never drift out of sync. Unit-circle mode temporarily fixes magnitude at one and restores the prior magnitude when the user leaves that lesson.
 
 ## Mathematical expectations
 
 - Use `Math.atan2(y, x)` for a quadrant-aware direction.
 - Treat `(0, 0)` as having no defined direction.
+- Treat sine and cosine as undefined for the zero vector because there is no hypotenuse to divide by.
 - Treat tangent as undefined when X is zero or effectively zero; explain "rise but no run" rather than rendering `Infinity` or `NaN`.
+- Explain that `asin`, `acos`, and `atan` return principal ranges and do not independently reconstruct every quadrant.
 - Test all four quadrants, axes, 0°/90°/180°/270°/360°, normalization, floating-point tolerance, and the ambiguity of `atan(y / x)`.
 - Keep the standard math convention explicit: 0° is +X and positive rotation is counterclockwise.
+- Delta-V mode relabels generic signed components but does not convert the mathematical direction into an assumed PDOF convention. Keep its convention card, source link, and forensic-use disclaimer visible.
 
 ## Commands
 
@@ -55,6 +59,6 @@ Deployment runs through the GitHub Pages workflow after changes reach the defaul
 - Keep rendering deterministic from state.
 - Round only for presentation; calculations use unrounded values.
 - Preserve visible focus styles, semantic controls, large pointer targets, keyboard operability where practical, and reduced-motion preferences.
+- All focused lessons must preserve non-color cues: side names, distinct line directions, labels, and direct equations.
 - Verify narrow layouts without shrinking the diagram or text into illegibility.
 - Update this file only for durable architectural or project-policy changes; use Git history for implementation chronology.
-

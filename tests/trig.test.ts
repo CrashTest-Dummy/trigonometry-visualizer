@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   angleFromCoordinates,
+  acosDegrees,
+  angularDistance,
+  asinDegrees,
   atan2Degrees,
   atanDegrees,
+  cosineFromComponents,
   coordinatesFromAngle,
   degreesToRadians,
+  displayAngle,
   getQuadrant,
   normalizeDegrees360,
   normalizeDegreesSigned,
   radiansToDegrees,
+  sineFromComponents,
   tangentFromComponents,
   vectorMagnitude,
 } from "../src/math/trig";
@@ -25,6 +31,9 @@ describe("angle conversion", () => {
     expect(normalizeDegrees360(810)).toBe(90);
     expect(normalizeDegreesSigned(270)).toBe(-90);
     expect(normalizeDegreesSigned(-190)).toBe(170);
+    expect(displayAngle(315, "signed")).toBe(-45);
+    expect(displayAngle(-45, "unsigned")).toBe(315);
+    expect(angularDistance(359, 1)).toBe(2);
   });
 });
 
@@ -39,6 +48,8 @@ describe("vector calculations", () => {
     const ninety = coordinatesFromAngle(90, 5);
     expect(ninety.x).toBeCloseTo(0, 12);
     expect(ninety.y).toBeCloseTo(5, 12);
+    const fullTurn = coordinatesFromAngle(360, 5);
+    expect(fullTurn).toEqual({ x: 5, y: 0 });
   });
 
   it.each([
@@ -89,6 +100,34 @@ describe("tangent, atan, and atan2", () => {
     [0, -1, "−Y axis"],
   ])("labels quadrant or axis for (%s, %s)", (x, y, expected) => {
     expect(getQuadrant(x, y)).toBe(expected);
+  });
+});
+
+describe("sine, cosine, and inverse functions", () => {
+  it("derives signed projections from components", () => {
+    expect(sineFromComponents(3, 4)).toBeCloseTo(0.8);
+    expect(cosineFromComponents(3, 4)).toBeCloseTo(0.6);
+    expect(sineFromComponents(-3, -4)).toBeCloseTo(-0.8);
+    expect(cosineFromComponents(-3, -4)).toBeCloseTo(-0.6);
+  });
+
+  it("does not define ratios for the zero vector", () => {
+    expect(sineFromComponents(0, 0)).toBeNull();
+    expect(cosineFromComponents(0, 0)).toBeNull();
+  });
+
+  it("returns the expected principal inverse ranges", () => {
+    expect(asinDegrees(0.5)).toBeCloseTo(30);
+    expect(asinDegrees(-0.5)).toBeCloseTo(-30);
+    expect(acosDegrees(0.5)).toBeCloseTo(60);
+    expect(acosDegrees(-0.5)).toBeCloseTo(120);
+  });
+
+  it("clamps harmless floating-point drift and rejects invalid ratios", () => {
+    expect(asinDegrees(1 + Number.EPSILON)).toBeCloseTo(90);
+    expect(acosDegrees(-1 - Number.EPSILON)).toBeCloseTo(180);
+    expect(asinDegrees(1.01)).toBeNull();
+    expect(acosDegrees(Number.NaN)).toBeNull();
   });
 });
 
