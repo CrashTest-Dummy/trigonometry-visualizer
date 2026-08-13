@@ -22,12 +22,14 @@ The project uses Vite, TypeScript, native HTML/CSS, and SVG. A framework was int
 
 - `src/math/` contains pure, DOM-independent math. Never couple these functions to SVG or interface state.
 - `src/main.ts` owns the canonical vector state and synchronizes dragging, component entry, angle entry, and lesson modes.
-- `src/ui/` owns lesson definitions, educational copy, and live value mapping.
+- `src/ui/` owns the data-defined guided course, versioned progress validation, quick-reference content, lesson definitions, educational copy, and live value mapping.
 - SVG/visual rendering belongs in dedicated rendering functions or modules, separate from pure math.
 - Educational copy belongs near the interface that presents it, not inside mathematical functions.
 - `.github/workflows/` owns deployment configuration.
 
 The canonical vector state is `{ x, y }`. Magnitude, direction, sine, cosine, tangent, inverse relationships, and SVG positions are derived. Dragging, keyboard control, component entry, angle entry, and angle sliders must update the same canonical state so controls never drift out of sync. Unit-circle mode temporarily fixes magnitude at one and restores the prior magnitude when the user leaves that lesson.
+
+Guided course progress is device-local and versioned under `triglab.learning.v1`. Store only the last mode/module/step, completed step IDs, and intro-dismissed state. Never store prediction answers or user/case data. Invalid or unavailable storage must fall back safely to the in-memory first-visit state.
 
 ## Mathematical expectations
 

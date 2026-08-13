@@ -7,7 +7,18 @@ import {
   vectorMagnitude,
   type AngleDisplayMode,
 } from "./math/trig";
+import {
+  COURSE_MODULES,
+  GUIDED_DEFINITIONS,
+  courseNavigationMarkup,
+  courseStepMarkup,
+  moduleIndexForStep,
+  type AppMode,
+  type InteractionGoal,
+} from "./ui/course";
 import { LESSONS, lessonMarkup, updateLessonValues } from "./ui/lessons";
+import { loadProgress, resetProgress, saveProgress, type CourseProgress } from "./ui/progress";
+import { definitionsMarkup, referenceMarkup } from "./ui/reference";
 import {
   clampGraphCoordinates,
   createPlotMarkup,
@@ -21,11 +32,23 @@ import {
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("Application root was not found.");
 
-const lessonTabs = LESSONS.map((item) => `
-  <button class="lesson-tab${item.id === "basics" ? " is-active" : ""}" type="button" data-lesson="${item.id}" aria-pressed="${item.id === "basics"}">
-    <span>${item.number}</span>${item.shortLabel}
-  </button>
+const lessonFamilies: Array<{ label: string; lessons: Lesson[] }> = [
+  { label: "Foundations", lessons: ["basics", "sine", "cosine", "tangent"] },
+  { label: "Recovering direction", lessons: ["inverse", "quadrants"] },
+  { label: "Connections", lessons: ["unit-circle", "delta-v"] },
+];
+
+const lessonTabs = lessonFamilies.map((family) => `
+  <div class="lesson-family"><span>${family.label}</span><div>${family.lessons.map((lessonId) => {
+    const item = LESSONS.find((candidate) => candidate.id === lessonId)!;
+    return `<button class="lesson-tab${item.id === "basics" ? " is-active" : ""}" type="button" data-lesson="${item.id}" aria-pressed="${item.id === "basics"}"><span>${item.number}</span>${item.shortLabel}</button>`;
+  }).join("")}</div></div>
 `).join("");
+
+let progress: CourseProgress = loadProgress();
+let appMode: AppMode = progress.lastMode;
+let activeCourseIndex = moduleIndexForStep(progress.stepId);
+let selectedPredictionId: string | null = null;
 
 app.innerHTML = `
   <header class="site-header">
@@ -34,12 +57,24 @@ app.innerHTML = `
   </header>
 
   <main id="top">
-    <section class="intro" aria-labelledby="page-title">
-      <div><p class="eyebrow">See why the formulas work</p><h1 id="page-title">Move the geometry.<br /><em>Build the intuition.</em></h1></div>
-      <p class="intro-copy">Every line, ratio, and equation is another view of the <strong>same vector.</strong> Drag it, rotate it, or edit its components and watch every relationship stay connected.</p>
+    <nav class="mode-switch" aria-label="Choose how to use TrigLab">
+      <button type="button" data-app-mode="guided" aria-pressed="${appMode === "guided"}"><span aria-hidden="true">◎</span><b>Guided course</b><small>Build intuition step by step</small></button>
+      <button type="button" data-app-mode="explore" aria-pressed="${appMode === "explore"}"><span aria-hidden="true">↗</span><b>Explore freely</b><small>Use the complete sandbox</small></button>
+      <button type="button" data-app-mode="reference" aria-pressed="${appMode === "reference"}"><span aria-hidden="true">▤</span><b>Quick reference</b><small>Formulas, signs, and cautions</small></button>
+    </nav>
+
+    <section class="intro" id="mode-intro" aria-labelledby="page-title">
+      <div><p class="eyebrow" id="intro-eyebrow">Guided course</p><h1 id="page-title">You already work with components.<br /><em>This course shows the picture behind them.</em></h1></div>
+      <p class="intro-copy" id="intro-copy">Predict what will happen, manipulate the vector, then check the geometry. No scores—just a clearer mental picture.</p>
     </section>
 
-    <nav class="lesson-tabs" aria-label="Choose a trigonometry lesson">${lessonTabs}</nav>
+    <section class="guided-orientation" id="guided-orientation" ${progress.introDismissed ? "hidden" : ""}>
+      <div><p class="card-kicker">Before you begin</p><h2>This is a seven-part visual briefing, not a math test.</h2><p>Each module asks for a prediction, lets you move the geometry, and then explains why the result makes sense. Your progress stays only in this browser.</p></div>
+      <button type="button" data-action="dismiss-intro">Start with the geometry →</button>
+    </section>
+
+    <div id="guided-navigation">${courseNavigationMarkup(activeCourseIndex, progress.completedStepIds)}</div>
+    <nav class="lesson-tabs" id="explore-navigation" aria-label="Choose a trigonometry lesson">${lessonTabs}</nav>
 
     <section class="workspace" aria-label="Interactive trigonometry lesson">
       <article class="plot-card">
@@ -84,13 +119,15 @@ app.innerHTML = `
         </form>
       </article>
 
-      <aside class="lesson-panel" id="lesson-panel">${lessonMarkup("basics", "sine")}</aside>
+      <aside class="lesson-panel" id="lesson-panel"></aside>
     </section>
 
-    <section class="coming-next" aria-label="Learning path">
-      <p class="card-kicker">The complete bridge</p>
-      <div class="roadmap" aria-hidden="true"><span class="is-current">Geometry</span><i>→</i><span>Ratios</span><i>→</i><span>Trig functions</span><i>→</i><span>Angles</span><i>→</i><span>Real vectors</span></div>
+    <section class="coming-next" id="learning-bridge" aria-labelledby="bridge-title">
+      <div class="bridge-heading"><div><p class="card-kicker">The complete bridge</p><h2 id="bridge-title">From geometry to field application</h2></div><button type="button" data-action="reset-course">Reset course progress</button></div>
+      <ol class="roadmap" id="roadmap"></ol>
     </section>
+
+    <div id="reference-view" hidden>${referenceMarkup()}</div>
 
     <footer>
       <p><strong>Educational use only.</strong> General lessons use the standard mathematical convention: 0° is +X and positive angles are counterclockwise.</p>
@@ -109,6 +146,7 @@ let lastAngle = angleFromCoordinates(vector.x, vector.y) ?? 0;
 let lastMagnitude = vectorMagnitude(vector.x, vector.y);
 let magnitudeBeforeUnitCircle = lastMagnitude;
 let hasDragged = false;
+let courseInteractionOccurred = false;
 
 const required = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -132,6 +170,88 @@ const currentRelation = (): Relation => {
   return relation;
 };
 
+const activeCourseStep = () => COURSE_MODULES[activeCourseIndex].step;
+
+const goalIsMet = (goal: InteractionGoal): boolean => {
+  if (!courseInteractionOccurred) return false;
+  const tolerance = goal.tolerance ?? 0.08;
+  if (goal.type === "preset-match") {
+    return Math.abs(vector.x - goal.target.x) <= tolerance && Math.abs(vector.y - goal.target.y) <= tolerance;
+  }
+  const angle = angleFromCoordinates(vector.x, vector.y);
+  if (angle === null) return false;
+  const difference = Math.abs(((angle - goal.degrees + 540) % 360) - 180);
+  return difference <= (goal.tolerance ?? 0.5);
+};
+
+const persistProgress = (): void => {
+  progress.lastMode = appMode;
+  progress.moduleId = COURSE_MODULES[activeCourseIndex].id;
+  progress.stepId = COURSE_MODULES[activeCourseIndex].step.id;
+  saveProgress(progress);
+};
+
+const bridgeStageForLesson = (selectedLesson: Lesson): number => {
+  if (selectedLesson === "basics") return 0;
+  if (selectedLesson === "sine" || selectedLesson === "cosine" || selectedLesson === "tangent") return 1;
+  if (selectedLesson === "inverse" || selectedLesson === "unit-circle") return 2;
+  if (selectedLesson === "quadrants") return 3;
+  return 4;
+};
+
+const bridgeStageForCourse = (): number => {
+  if (activeCourseIndex === 0) return 0;
+  if (activeCourseIndex === 1) return 1;
+  if (activeCourseIndex === 2 || activeCourseIndex === 4 || activeCourseIndex === 5) return 2;
+  if (activeCourseIndex === 3) return 3;
+  return 4;
+};
+
+const updateBridge = (): void => {
+  const stages = ["Geometry", "Components and ratios", "Trig functions", "Direction", "Field application"];
+  const current = appMode === "guided" ? bridgeStageForCourse() : bridgeStageForLesson(lesson);
+  required<HTMLOListElement>("#roadmap").innerHTML = stages.map((stage, index) => {
+    const state = index < current ? "complete" : index === current ? "current" : "upcoming";
+    return `<li data-state="${state}"${index === current ? ' aria-current="step"' : ""}><span>${index < current ? "✓" : index + 1}</span><b>${stage}</b>${index < stages.length - 1 ? '<i aria-hidden="true">→</i>' : ""}</li>`;
+  }).join("");
+};
+
+const updateModePresentation = (): void => {
+  const guided = appMode === "guided";
+  const explore = appMode === "explore";
+  const reference = appMode === "reference";
+  required<HTMLElement>("#mode-intro").hidden = reference;
+  required<HTMLElement>("#guided-orientation").hidden = !guided || progress.introDismissed;
+  required<HTMLElement>("#guided-navigation").hidden = !guided;
+  required<HTMLElement>("#explore-navigation").hidden = !explore;
+  required<HTMLElement>(".workspace").hidden = reference;
+  required<HTMLElement>("#learning-bridge").hidden = reference;
+  required<HTMLElement>("#reference-view").hidden = !reference;
+  document.body.dataset.mode = appMode;
+  document.querySelectorAll<HTMLButtonElement>("[data-app-mode]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.appMode === appMode));
+  });
+
+  if (guided) {
+    setText("intro-eyebrow", "Guided course · collision investigation context");
+    required<HTMLElement>("#page-title").innerHTML = "You already work with components.<br /><em>This course shows the picture behind them.</em>";
+    setText("intro-copy", "Predict what will happen, manipulate the vector, then check the geometry. No scores—just a clearer mental picture.");
+  } else if (explore) {
+    setText("intro-eyebrow", "Explore every relationship");
+    required<HTMLElement>("#page-title").innerHTML = "Move the geometry.<br /><em>Build the intuition.</em>";
+    setText("intro-copy", "Every line, ratio, and equation is another view of the same vector. Choose a lesson and manipulate it freely.");
+  }
+  updateBridge();
+};
+
+const renderGuidedPanel = (): void => {
+  const step = activeCourseStep();
+  const panel = required<HTMLElement>("#lesson-panel");
+  panel.innerHTML = courseStepMarkup(activeCourseIndex, selectedPredictionId, goalIsMet(step.interactionGoal), progress.completedStepIds)
+    + definitionsMarkup(GUIDED_DEFINITIONS[step.id]);
+  required<HTMLElement>("#guided-navigation").innerHTML = courseNavigationMarkup(activeCourseIndex, progress.completedStepIds);
+};
+
 const updateDerivedMemory = (): void => {
   const magnitude = vectorMagnitude(vector.x, vector.y);
   const angle = angleFromCoordinates(vector.x, vector.y);
@@ -141,7 +261,11 @@ const updateDerivedMemory = (): void => {
 
 const updateLessonPanel = (): void => {
   const panel = required<HTMLElement>("#lesson-panel");
-  panel.innerHTML = lessonMarkup(lesson, relation);
+  if (appMode === "guided") {
+    renderGuidedPanel();
+    return;
+  }
+  panel.innerHTML = lessonMarkup(lesson, relation) + definitionsMarkup();
 };
 
 const lessonHeadings: Record<Lesson, { kicker: string; title: string }> = {
@@ -165,7 +289,11 @@ const render = (announce = false): void => {
   const suffix = deltaMode ? ` ${units}` : "";
 
   renderVector(vector, { lesson, relation: currentRelation(), angleMode });
-  updateLessonValues(required<HTMLElement>("#lesson-panel"), { vector, angleMode, relation, units });
+  if (appMode === "guided") {
+    renderGuidedPanel();
+  } else if (appMode === "explore") {
+    updateLessonValues(required<HTMLElement>("#lesson-panel"), { vector, angleMode, relation, units });
+  }
 
   setText("x-readout", `${format(vector.x)}${suffix}`);
   setText("y-readout", `${format(vector.y)}${suffix}`);
@@ -205,6 +333,7 @@ const render = (announce = false): void => {
   required<HTMLElement>("#origin-angle-note").hidden = angle !== null;
 
   document.body.dataset.lesson = lesson;
+  updateBridge();
   if (announce) {
     setText("live-values", `X ${format(vector.x)}, Y ${format(vector.y)}, magnitude ${format(magnitude)}, direction ${displayedAngle === null ? "undefined" : `${format(displayedAngle, 1)} degrees`}`);
   }
@@ -227,6 +356,7 @@ const setAngle = (degrees: number, announce = false): void => {
 
 const selectLesson = (nextLesson: Lesson): void => {
   if (nextLesson === lesson) return;
+  if (nextLesson === "inverse") relation = "sine";
   const leavingUnitCircle = lesson === "unit-circle" && nextLesson !== "unit-circle";
   const enteringUnitCircle = nextLesson === "unit-circle" && lesson !== "unit-circle";
   const angle = currentAngle();
@@ -243,6 +373,55 @@ const selectLesson = (nextLesson: Lesson): void => {
     button.setAttribute("aria-pressed", String(active));
   });
   updateLessonPanel();
+  render(true);
+};
+
+const traceRelevantRelationship = (): void => {
+  const ids = activeCourseStep().lesson === "basics"
+    ? ["#x-component", "#y-component", "#resultant"]
+    : activeCourseStep().relation === "sine"
+      ? ["#y-component", "#resultant"]
+      : activeCourseStep().relation === "cosine"
+        ? ["#x-component", "#resultant"]
+        : ["#x-component", "#y-component"];
+  const elements: Element[] = ids.map((selector) => required<SVGElement>(selector));
+  elements.push(...document.querySelectorAll<HTMLElement>(".try-card, .why-card"));
+  elements.forEach((element) => element.classList.add("trace-focused"));
+  window.setTimeout(() => elements.forEach((element) => element.classList.remove("trace-focused")), 750);
+};
+
+const applyCourseModule = (index: number, loadPreset = false): void => {
+  const bounded = Math.max(0, Math.min(COURSE_MODULES.length - 1, index));
+  const step = COURSE_MODULES[bounded].step;
+  activeCourseIndex = bounded;
+  selectedPredictionId = null;
+  courseInteractionOccurred = false;
+  selectLesson(step.lesson);
+  relation = step.relation;
+  if (loadPreset) {
+    vector = clampGraphCoordinates(step.preset);
+    lastAngle = angleFromCoordinates(vector.x, vector.y) ?? lastAngle;
+    lastMagnitude = vectorMagnitude(vector.x, vector.y) || lastMagnitude;
+  }
+  persistProgress();
+  updateLessonPanel();
+  render(true);
+};
+
+const setAppMode = (nextMode: AppMode): void => {
+  if (appMode === nextMode) return;
+  appMode = nextMode;
+  if (appMode === "guided") {
+    const step = activeCourseStep();
+    lesson = step.lesson;
+    relation = step.relation;
+    courseInteractionOccurred = false;
+    updateLessonPanel();
+  } else if (appMode === "explore") {
+    updateLessonPanel();
+  }
+  persistProgress();
+  updateModePresentation();
   render(true);
 };
 
@@ -267,6 +446,7 @@ const updateFromPointer = (event: PointerEvent): void => {
 
 endpointHit.addEventListener("pointerdown", (event) => {
   hasDragged = true;
+  courseInteractionOccurred = true;
   required<HTMLElement>("#drag-prompt").classList.add("is-hidden");
   endpointHit.setPointerCapture(event.pointerId);
   updateFromPointer(event);
@@ -282,12 +462,14 @@ endpointHit.addEventListener("keydown", (event) => {
   const step = event.shiftKey ? 0.1 : 0.5;
   if (lesson === "unit-circle" && ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp"].includes(event.key)) {
     event.preventDefault();
+    courseInteractionOccurred = true;
     setAngle(currentAngle() + (event.key === "ArrowLeft" || event.key === "ArrowDown" ? -step * 5 : step * 5), true);
     return;
   }
   const delta: Record<string, VectorState> = { ArrowLeft: { x: -step, y: 0 }, ArrowRight: { x: step, y: 0 }, ArrowUp: { x: 0, y: step }, ArrowDown: { x: 0, y: -step } };
   if (!delta[event.key]) return;
   event.preventDefault();
+  courseInteractionOccurred = true;
   updateVector({ x: vector.x + delta[event.key].x, y: vector.y + delta[event.key].y }, true);
 });
 
@@ -296,12 +478,14 @@ required<HTMLFormElement>("#vector-form").addEventListener("input", (event) => {
   if (!(target instanceof HTMLInputElement) || target.value === "") return;
   const value = Number(target.value);
   if (!Number.isFinite(value)) return;
+  courseInteractionOccurred = true;
   if (target.name === "x") updateVector({ ...vector, x: value });
   if (target.name === "y") updateVector({ ...vector, y: value });
   if (target.name === "angle" || target.id === "angle-slider") setAngle(value);
 });
 
 required<HTMLButtonElement>("#reset-button").addEventListener("click", () => {
+  courseInteractionOccurred = true;
   if (lesson === "unit-circle") {
     vector = coordinatesFromAngle(30, 1);
   } else {
@@ -327,12 +511,21 @@ document.querySelectorAll<HTMLButtonElement>("[data-angle-mode]").forEach((butto
 });
 
 document.querySelectorAll<HTMLButtonElement>("[data-angle-preset]").forEach((button) => {
-  button.addEventListener("click", () => setAngle(Number(button.dataset.anglePreset), true));
+  button.addEventListener("click", () => {
+    courseInteractionOccurred = true;
+    setAngle(Number(button.dataset.anglePreset), true);
+  });
 });
 
 required<HTMLElement>("#lesson-panel").addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
+  const predictionButton = target.closest<HTMLButtonElement>("[data-prediction]");
+  if (predictionButton && appMode === "guided") {
+    selectedPredictionId = predictionButton.dataset.prediction ?? null;
+    renderGuidedPanel();
+    return;
+  }
   const relationButton = target.closest<HTMLButtonElement>("[data-relation]");
   if (relationButton) {
     relation = relationButton.dataset.relation as Relation;
@@ -341,6 +534,27 @@ required<HTMLElement>("#lesson-panel").addEventListener("click", (event) => {
     return;
   }
   const actionButton = target.closest<HTMLButtonElement>("[data-action]");
+  if (actionButton?.dataset.action === "course-preset" && appMode === "guided") {
+    const step = activeCourseStep();
+    courseInteractionOccurred = true;
+    updateVector(step.preset, true);
+    traceRelevantRelationship();
+  }
+  if (actionButton?.dataset.action === "course-previous" && appMode === "guided") {
+    applyCourseModule(activeCourseIndex - 1);
+  }
+  if (actionButton?.dataset.action === "course-next" && appMode === "guided") {
+    const step = activeCourseStep();
+    if (!goalIsMet(step.interactionGoal) || selectedPredictionId === null) return;
+    if (!progress.completedStepIds.includes(step.id)) progress.completedStepIds.push(step.id);
+    if (activeCourseIndex < COURSE_MODULES.length - 1) {
+      applyCourseModule(activeCourseIndex + 1);
+    } else {
+      persistProgress();
+      renderGuidedPanel();
+      required<HTMLElement>("#lesson-panel").insertAdjacentHTML("afterbegin", '<div class="course-finished" role="status"><span>✓</span><div><strong>Course complete</strong><p>You have crossed the full bridge from geometry to a field application. Use Explore freely to revisit any relationship.</p></div></div>');
+    }
+  }
   if (actionButton?.dataset.action === "flip") updateVector({ x: -vector.x, y: -vector.y }, true);
   if (actionButton?.dataset.action === "delta-example") updateVector({ x: -18, y: 7 }, true);
 });
@@ -357,4 +571,50 @@ window.setTimeout(() => {
   if (!hasDragged) required<HTMLElement>("#drag-prompt").classList.add("is-visible");
 }, 650);
 
+document.querySelectorAll<HTMLButtonElement>("[data-app-mode]").forEach((button) => {
+  button.addEventListener("click", () => setAppMode(button.dataset.appMode as AppMode));
+});
+
+required<HTMLElement>("#guided-navigation").addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const button = target.closest<HTMLButtonElement>("[data-course-module]");
+  if (button) applyCourseModule(Number(button.dataset.courseModule));
+});
+
+required<HTMLElement>("#guided-orientation").addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof Element) || !target.closest('[data-action="dismiss-intro"]')) return;
+  progress.introDismissed = true;
+  persistProgress();
+  updateModePresentation();
+});
+
+required<HTMLElement>("#learning-bridge").addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof Element) || !target.closest('[data-action="reset-course"]')) return;
+  progress = resetProgress();
+  activeCourseIndex = 0;
+  selectedPredictionId = null;
+  courseInteractionOccurred = false;
+  appMode = "guided";
+  lesson = COURSE_MODULES[0].step.lesson;
+  relation = COURSE_MODULES[0].step.relation;
+  vector = COURSE_MODULES[0].step.preset;
+  updateLessonPanel();
+  updateModePresentation();
+  render(true);
+});
+
+required<HTMLElement>("#reference-view").addEventListener("click", (event) => {
+  const target = event.target;
+  if (target instanceof Element && target.closest('[data-action="print-reference"]')) window.print();
+});
+
+if (appMode === "guided") {
+  lesson = activeCourseStep().lesson;
+  relation = activeCourseStep().relation;
+}
+updateLessonPanel();
+updateModePresentation();
 render();

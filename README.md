@@ -1,8 +1,16 @@
 # TrigLab — Interactive Trigonometry Visualizer
 
-TrigLab is a browser-based educational tool for rebuilding geometric intuition about trigonometry. A single draggable vector connects geometry to live ratios, trig functions, inverse functions, quadrant-aware angles, unit-circle coordinates, and real-world component problems.
+TrigLab is a browser-based educational tool for rebuilding geometric intuition about trigonometry. A single draggable vector connects geometry to live ratios, trig functions, inverse functions, quadrant-aware angles, unit-circle coordinates, and real-world component problems. The language and learning path are designed for collision investigators who use components but may not have a recent mathematics background.
 
 The project was motivated by crash-reconstruction work involving longitudinal and lateral Delta-V components. It is an educational aid, not validated forensic software.
+
+## Three ways to use TrigLab
+
+- **Guided course** is the first-visit default. Seven short modules move from a 3–4–5 vector through ratios, inverse tangent, `atan2`, sine and cosine, optional unit-circle enrichment, and a signed Delta-V example. Every module follows Predict → Try it → Why → Investigator takeaway, with formal math behind an optional reveal.
+- **Explore freely** preserves the complete eight-lesson sandbox. Lessons are grouped as Foundations, Recovering direction, and Connections without changing their controls or behavior.
+- **Quick reference** is a compact job aid for question-to-tool mapping, formulas, coordinate and quadrant checks, `atan` versus `atan2`, undefined cases, glossary terms, and convention cautions. It includes letter-size print styling.
+
+Guided-course progress stays only in the current browser under `triglab.learning.v1`. Prediction choices are never stored or scored, and a visible reset action clears course progress.
 
 ## Lessons and interactions
 
@@ -35,6 +43,8 @@ npm test
 npm run build
 ```
 
+The post-build curriculum review is documented in [the collision-investigator usability pilot](docs/usability-pilot.md).
+
 ## Deployment
 
 The Vite build uses relative asset paths so the site works under a GitHub Pages repository subpath. [The GitHub Actions workflow](.github/workflows/deploy-pages.yml) runs the complete test suite, builds the static assets, and deploys `dist/` whenever `main` changes.
@@ -45,7 +55,7 @@ If configuring a fork, select **Settings → Pages → Source → GitHub Actions
 
 ```text
 src/math/             Pure DOM-independent calculations
-src/ui/               Lesson definitions, educational copy, and live value mapping
+src/ui/               Course data, progress validation, reference content, lesson copy, and live value mapping
 src/visualization/    SVG geometry and relationship emphasis
 src/main.ts           Canonical vector state and synchronized interaction wiring
 tests/                Math and browser-like interface tests
@@ -59,4 +69,3 @@ General lessons use the standard mathematical convention: 0° is positive X and 
 For comparison, [49 CFR §563.5](https://www.govinfo.gov/link/cfr/49/563?link-type=pdf&sectionnum=5&year=mostrecent) defines EDR longitudinal acceleration as positive forward and lateral acceleration as positive from the driver’s left to right. EDR systems, standards, manufacturers, agencies, and reporting conventions may still differ in how direction is expressed or transformed.
 
 Actual reconstruction work should follow validated tools, applicable standards, agency procedures, manufacturer documentation, and the relevant EDR documentation.
-
