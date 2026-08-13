@@ -59,7 +59,7 @@ main { width: min(1440px, 100%); margin: 0 auto; padding: 0 clamp(16px, 4vw, 64p
 .lesson-tabs { display: flex; align-items: stretch; gap: 8px; margin-bottom: 18px; padding-bottom: 4px; overflow-x: auto; scrollbar-width: thin; }
 .lesson-tab { display: flex; flex: 0 0 auto; align-items: center; gap: 9px; min-height: 48px; padding: 0 15px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); font-size: 0.76rem; font-weight: 800; cursor: pointer; transition: 160ms ease; }
 .lesson-tab span { color: #9aa5b6; font-size: 0.65rem; }
-.lesson-tab:hover { border-color: #aeb9c9; transform: translateY(-1px); }
+.lesson-tab:hover { border-color: #aeb9c9; box-shadow: 0 3px 10px rgba(20, 34, 58, 0.08); }
 .lesson-tab.is-active { border-color: var(--ink); background: var(--ink); color: white; box-shadow: 0 7px 20px rgba(20, 34, 58, 0.14); }
 .lesson-tab.is-active span { color: #8fc8b4; }
 .future-lessons { display: flex; align-items: center; gap: 24px; margin-left: auto; padding-right: 8px; color: #9ca6b5; font-size: 0.72rem; font-weight: 750; }
