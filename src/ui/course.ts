@@ -2,6 +2,9 @@ import type { Lesson, Relation, VectorState } from "../visualization/vectorPlot"
 
 export type AppMode = "guided" | "explore" | "reference";
 
+export const COURSE_PHASES = ["orient", "notice", "predict", "manipulate", "explain", "takeaway"] as const;
+export type CoursePhase = typeof COURSE_PHASES[number];
+
 export type PredictionOption = {
   id: string;
   label: string;
@@ -56,23 +59,22 @@ export const COURSE_MODULES: CourseModule[] = [
     shortTitle: "Geometry",
     step: {
       id: "read-vector-345",
-      title: "Three measurements, one geometry",
+      title: "These three lines are one vector",
       lesson: "basics",
       relation: "tangent",
       notice: "A reported X component and Y component are perpendicular. Their resultant is the straight-line vector they create together.",
-      fieldConnection: "Think of these as two signed measurements reported along defined axes—not as two separate events.",
+      fieldConnection: "Think of these as two signed measurements reported along defined axes, not as two separate events.",
       predictionQuestion: "If X is 3 units and Y is 4 units, will the resultant be shorter than, equal to, or longer than either component?",
       predictions: [
-        option("shorter", "Shorter than both", "A resultant spans both perpendicular components, so it cannot be shorter than the larger component.", false),
-        option("equal", "Equal to the larger one", "That would ignore the distance contributed by the other component.", false),
-        option("longer", "Longer than either", "Exactly. The resultant crosses the rectangle formed by both components; here it is 5 units.", true),
+        option("not-longer", "Equal to or shorter than 4", "That leaves out some of the distance created by the horizontal component.", false),
+        option("longer", "Longer than 4", "Yes. The resultant crosses the rectangle made by both components. Here it is 5 units.", true),
       ],
-      tryPrompt: "Load the familiar 3–4–5 triangle, then trace blue X, coral Y, and green resultant on the diagram.",
+      tryPrompt: "Load the familiar 3-4-5 triangle, then trace blue X, coral Y, and green resultant on the diagram.",
       tryAction: "Load X = 3, Y = 4",
       preset: { x: 3, y: 4 },
       interactionGoal: { type: "preset-match", target: { x: 3, y: 4 } },
       why: "The two components form the legs of a right triangle. The resultant is its diagonal, so X² + Y² = R².",
-      takeaway: "When a tool reports perpendicular components, the resultant is the combined magnitude—not X plus Y.",
+      takeaway: "When a tool reports perpendicular components, the resultant is the combined magnitude, not X plus Y.",
       math: `<span class="r-text">R</span> = √(<span class="x-text">3²</span> + <span class="y-text">4²</span>) = √25 = 5`,
       trap: "Do not add 3 + 4 to get magnitude. Ordinary addition applies only when values act along the same line.",
     },
@@ -84,16 +86,15 @@ export const COURSE_MODULES: CourseModule[] = [
     shortTitle: "Ratio",
     step: {
       id: "ratio-as-steepness",
-      title: "A ratio describes direction without size",
+      title: "The ratio is the triangle's steepness",
       lesson: "tangent",
       relation: "tangent",
       notice: "Rise divided by run answers a plain question: how many lateral units occur for every longitudinal unit? Mathematicians call this steepness tangent.",
       fieldConnection: "Suppose a tool reports X = 10 and Y = 5. The ratio is 0.5 lateral units per longitudinal unit.",
       predictionQuestion: "If both components double to X = 20 and Y = 10, what happens to the direction?",
       predictions: [
-        option("double", "The angle doubles", "Both parts grew by the same factor, so the shape did not change.", false),
         option("same", "The angle stays the same", "Correct. 5 ÷ 10 and 10 ÷ 20 are both 0.5, so the vectors have the same steepness.", true),
-        option("half", "The angle is cut in half", "Scaling both components changes length, not the component ratio.", false),
+        option("changes", "The angle changes", "Both components grew by the same factor, so the triangle kept the same shape and direction.", false),
       ],
       tryPrompt: "Load X = 10 and Y = 5. Then compare the colored lines with the matching values in the live ratio.",
       tryAction: "Load the 10, 5 ratio",
@@ -112,23 +113,22 @@ export const COURSE_MODULES: CourseModule[] = [
     shortTitle: "Inverse",
     step: {
       id: "inverse-ratio",
-      title: "Run the ratio question backward",
+      title: "A ratio can point back to an angle",
       lesson: "inverse",
       relation: "tangent",
       notice: "Arctangent asks the reverse question: which principal angle creates this rise-to-run ratio?",
       fieldConnection: "This is useful when the components are known and the direction relative to the displayed axes is the unknown.",
       predictionQuestion: "A Y/X ratio of 1 means equal vertical and horizontal components. Which principal angle fits?",
       predictions: [
-        option("30", "30°", "At 30°, the vertical share is smaller than the horizontal share.", false),
         option("45", "45°", "Correct. Equal legs form a 45° right triangle in the first quadrant.", true),
-        option("90", "90°", "At 90°, X is zero and Y/X is undefined rather than 1.", false),
+        option("not-45", "Another angle", "Equal horizontal and vertical components make a 45° line in the first quadrant.", false),
       ],
       tryPrompt: "Load equal components and watch the angle become 45° while the ratio becomes 1.",
       tryAction: "Load X = 6, Y = 6",
       preset: { x: 6, y: 6 },
       interactionGoal: { type: "angle-match", degrees: 45 },
       why: "Forward tangent converts an angle to a ratio. Arctangent converts that ratio back to a principal angle.",
-      takeaway: "Use inverse trig to recover an angle from a known ratio—but remember that a principal result does not preserve every possible quadrant.",
+      takeaway: "Use inverse trig to recover an angle from a known ratio. Remember that a principal result does not preserve every possible quadrant.",
       math: `atan(<span class="y-text">6</span> ÷ <span class="x-text">6</span>) = atan(1) = <span class="angle-text">45°</span>`,
       trap: "Check calculator mode. These lessons display degrees; many programming functions return radians unless converted.",
     },
@@ -140,15 +140,15 @@ export const COURSE_MODULES: CourseModule[] = [
     shortTitle: "atan2",
     step: {
       id: "quadrant-signs",
-      title: "The ratio alone loses the quadrant",
+      title: "The signs choose the quadrant",
       lesson: "quadrants",
       relation: "tangent",
       notice: "Dividing two negative components produces a positive ratio. The division has erased the two signs that identified the original direction.",
       fieldConnection: "When signed X and Y components are available, atan2(Y, X) retains both signs and locates the vector on the displayed coordinate plane.",
       predictionQuestion: "Do vectors (10, 5) and (−10, −5) have the same direction because both have a Y/X ratio of 0.5?",
       predictions: [
-        option("yes", "Yes—the ratio matches", "The steepness matches, but the signs place the vectors in opposite quadrants.", false),
-        option("no", "No—they point opposite ways", "Correct. atan2 separates the two directions by 180° because it keeps both signs.", true),
+        option("yes", "Yes, the ratio matches", "The steepness matches, but the signs place the vectors in opposite quadrants.", false),
+        option("no", "No, they point opposite ways", "Correct. atan2 separates the two directions by 180° because it keeps both signs.", true),
       ],
       tryPrompt: "Load the negative pair. Compare the simple atan result with the quadrant-aware atan2 result.",
       tryAction: "Load X = −10, Y = −5",
@@ -174,11 +174,10 @@ export const COURSE_MODULES: CourseModule[] = [
       fieldConnection: "These relationships let you move between a known resultant-and-direction description and its axis components.",
       predictionQuestion: "For X = 6, Y = 8, R = 10, what fraction of the resultant lies vertically?",
       predictions: [
-        option("point-six", "0.6", "That is the horizontal share: X/R = 6/10.", false),
         option("point-eight", "0.8", "Correct. Y/R = 8/10, so 80% of the vector’s length projects vertically.", true),
-        option("one-four", "1.4", "A component-to-resultant share cannot exceed 1 in magnitude.", false),
+        option("point-six", "0.6", "That is the horizontal share: X/R = 6/10. The vertical share is 8/10.", false),
       ],
-      tryPrompt: "Load the 6–8–10 triangle and compare the blue and coral shares of the green resultant.",
+      tryPrompt: "Load the 6-8-10 triangle and compare the blue and coral shares of the green resultant.",
       tryAction: "Load X = 6, Y = 8",
       preset: { x: 6, y: 8 },
       interactionGoal: { type: "preset-match", target: { x: 6, y: 8 } },
@@ -195,7 +194,7 @@ export const COURSE_MODULES: CourseModule[] = [
     shortTitle: "Unit circle",
     step: {
       id: "radius-one",
-      title: "Optional enrichment: set the whole to one",
+      title: "With a radius of 1, coordinates become ratios",
       lesson: "unit-circle",
       relation: "sine",
       notice: "On a circle with radius 1, dividing X or Y by the resultant changes nothing. The endpoint coordinates are cosine and sine.",
@@ -223,16 +222,15 @@ export const COURSE_MODULES: CourseModule[] = [
     shortTitle: "Delta-V",
     step: {
       id: "delta-v-application",
-      title: "From signed components to a resultant",
+      title: "The signs place the vector first",
       lesson: "delta-v",
       relation: "tangent",
       notice: "Suppose a tool reports signed components ΔVx = −18 and ΔVy = 7. The same triangle gives a resultant magnitude and a direction relative to the axes shown.",
       fieldConnection: "The calculation is generic vector mathematics. Its interpretation depends on the reporting system’s documented axes, signs, and direction convention.",
       predictionQuestion: "Before calculating, where must the vector appear on this mathematical display?",
       predictions: [
-        option("q1", "Quadrant I: +X, +Y", "X is negative, so the vector cannot point toward +X.", false),
         option("q2", "Quadrant II: −X, +Y", "Correct. Negative X points left and positive Y points up on the displayed axes.", true),
-        option("q3", "Quadrant III: −X, −Y", "Y is positive, so the vector must appear above the X-axis.", false),
+        option("not-q2", "A different quadrant", "The signs settle this before any calculation: negative X points left and positive Y points up.", false),
       ],
       tryPrompt: "Load the signed components. Confirm the quadrant first, then read the resultant and atan2 direction.",
       tryAction: "Load ΔVx = −18, ΔVy = 7",
@@ -265,68 +263,85 @@ export const moduleIndexForStep = (stepId: string): number => {
 
 export const courseNavigationMarkup = (
   activeIndex: number,
+  phaseIndex: number,
   completedStepIds: readonly string[],
 ): string => `
-  <nav class="course-nav" aria-label="Guided course modules">
-    <div class="course-nav-heading"><span>Guided course</span><strong>${completedStepIds.length} of ${COURSE_MODULES.length} complete</strong></div>
-    <div class="course-module-list">
-      ${COURSE_MODULES.map((module, index) => {
-        const complete = completedStepIds.includes(module.step.id);
-        const state = index === activeIndex ? "current" : complete ? "complete" : "upcoming";
-        return `<button type="button" data-course-module="${index}" data-state="${state}" aria-current="${index === activeIndex ? "step" : "false"}"><span>${complete ? "✓" : module.number}</span><b>${module.title}</b>${module.step.enrichment ? "<em>Optional</em>" : ""}</button>`;
-      }).join("")}
+  <section class="guided-progress" aria-label="Course progress">
+    <div class="guided-progress-copy">
+      <strong>Module ${activeIndex + 1} of ${COURSE_MODULES.length}</strong>
+      <span>${COURSE_MODULES[activeIndex].title}${COURSE_MODULES[activeIndex].step.enrichment ? " · Optional" : ""}</span>
     </div>
-  </nav>
+    <ol aria-label="Module steps">
+      ${COURSE_PHASES.map((phase, index) => `<li data-state="${index < phaseIndex ? "complete" : index === phaseIndex ? "current" : "upcoming"}"${index === phaseIndex ? ' aria-current="step"' : ""}><span class="sr-only">${phase}</span></li>`).join("")}
+    </ol>
+    <span class="guided-step-count">Step ${phaseIndex + 1} of ${COURSE_PHASES.length}</span>
+    <span class="sr-only">${completedStepIds.length} of ${COURSE_MODULES.length} modules complete</span>
+  </section>
 `;
 
-export const courseStepMarkup = (
+const phaseTitle = (phase: CoursePhase, activeIndex: number): string => {
+  const step = COURSE_MODULES[activeIndex].step;
+  if (phase === "orient") return COURSE_MODULES[activeIndex].title;
+  if (phase === "notice") return step.title;
+  if (phase === "predict") return "Make a quick prediction";
+  if (phase === "manipulate") return "Put it on the diagram";
+  if (phase === "explain") return "Why it works";
+  return "Take this with you";
+};
+
+const phaseBody = (
+  phase: CoursePhase,
   activeIndex: number,
   selectedPredictionId: string | null,
   goalMet: boolean,
-  completedStepIds: readonly string[],
+): string => {
+  const step = COURSE_MODULES[activeIndex].step;
+  const selected = step.predictions.find((prediction) => prediction.id === selectedPredictionId);
+  if (phase === "orient") return `<p class="guided-lead">${step.fieldConnection}</p><p class="guided-direction">First, we will look at one relationship on the diagram.</p>`;
+  if (phase === "notice") return `<p class="guided-lead">${step.notice}</p><p class="guided-direction"><span aria-hidden="true">◉</span> Look at the colored lines and their direct labels.</p>`;
+  if (phase === "predict") {
+    if (selected) return `<div class="prediction-feedback ${selected.correct ? "is-correct" : "is-rethink"}" role="status"><strong>${selected.correct ? "That fits the picture." : "Take another look."}</strong><p>${selected.feedback}</p>${selected.correct ? "" : '<small>This is practice, not a score.</small><button type="button" data-action="retry-prediction">Try again</button>'}</div>`;
+    return `<fieldset class="guided-prediction"><legend>${step.predictionQuestion}</legend><div>${step.predictions.map((prediction) => `<button type="button" data-prediction="${prediction.id}">${prediction.label}</button>`).join("")}</div></fieldset>`;
+  }
+  if (phase === "manipulate") return `<p class="guided-lead">${step.tryPrompt}</p><p class="goal-status ${goalMet ? "is-met" : ""}" role="status"><span>${goalMet ? "✓" : "○"}</span>${goalMet ? "The target relationship is now on the diagram." : "Use the green action below. Then trace the changed lines."}</p>`;
+  if (phase === "explain") return `<p class="guided-lead">${step.why}</p><details class="show-math"><summary>Show the math</summary><p class="live-equation">${step.math}</p></details>`;
+  return `<div class="investigator-takeaway"><small>Investigator takeaway</small><strong>${step.takeaway}</strong></div><aside class="common-trap"><strong>Common trap</strong><p>${step.trap}</p></aside>`;
+};
+
+export const courseStepMarkup = (
+  activeIndex: number,
+  phaseIndex: number,
+  selectedPredictionId: string | null,
+  goalMet: boolean,
 ): string => {
   const module = COURSE_MODULES[activeIndex];
   const step = module.step;
+  const phase = COURSE_PHASES[phaseIndex];
   const selected = step.predictions.find((prediction) => prediction.id === selectedPredictionId);
-  const canContinue = selected !== undefined && goalMet;
   const isLast = activeIndex === COURSE_MODULES.length - 1;
+  const isFirst = activeIndex === 0 && phaseIndex === 0;
+  const continueReady = phase !== "predict" || selected !== undefined;
+  const interactionReady = phase !== "manipulate" || goalMet;
+  const primaryAction = phase === "manipulate" && !goalMet ? "course-preset" : "course-next";
+  const primaryLabel = phase === "orient"
+    ? "Begin module"
+    : phase === "notice"
+      ? "I see it · Continue"
+      : phase === "manipulate" && !goalMet
+        ? step.tryAction
+        : phase === "takeaway"
+          ? isLast ? "Finish course" : "Next module"
+          : "Continue";
   return `
-    <section class="course-step" aria-labelledby="course-step-title">
-      <header class="course-step-header">
-        <div><p class="card-kicker">Module ${module.number} of ${COURSE_MODULES.length}${step.enrichment ? " · optional enrichment" : ""}</p><h2 id="course-step-title">${step.title}</h2></div>
-        <span class="course-complete-mark" aria-label="${completedStepIds.includes(step.id) ? "Completed" : "Not completed"}">${completedStepIds.includes(step.id) ? "✓ Complete" : "In progress"}</span>
-      </header>
-
-      <div class="course-notice"><small>What to notice</small><p>${step.notice}</p><div class="field-connection"><strong>Investigator context</strong>${step.fieldConnection}</div></div>
-
-      <fieldset class="prediction-card">
-        <legend><span>1</span> Predict before revealing</legend>
-        <p>${step.predictionQuestion}</p>
-        <div class="prediction-options">
-          ${step.predictions.map((prediction) => `<button type="button" data-prediction="${prediction.id}" aria-pressed="${prediction.id === selectedPredictionId}">${prediction.label}</button>`).join("")}
-        </div>
-        ${selected ? `<div class="prediction-feedback ${selected.correct ? "is-correct" : "is-rethink"}" role="status"><strong>${selected.correct ? "That fits the geometry." : "Take another look."}</strong><p>${selected.feedback}</p>${selected.correct ? "" : "<small>This is practice, not a score. You may retry or continue after the Try it step.</small>"}</div>` : ""}
-      </fieldset>
-
-      <section class="try-card" aria-labelledby="try-title">
-        <div class="course-section-title"><span>2</span><div><h3 id="try-title">Try it on the diagram</h3><p>${step.tryPrompt}</p></div></div>
-        <button type="button" class="try-action" data-action="course-preset">${step.tryAction}</button>
-        <p class="goal-status ${goalMet ? "is-met" : ""}" role="status"><span>${goalMet ? "✓" : "○"}</span>${goalMet ? "The diagram now shows the target relationship." : "Use the preset or manipulate the vector to reach the target."}</p>
-      </section>
-
-      ${selected ? `
-        <section class="why-card" aria-labelledby="why-title">
-          <div class="course-section-title"><span>3</span><div><h3 id="why-title">Why it works</h3><p>${step.why}</p></div></div>
-          <div class="investigator-takeaway"><small>Investigator takeaway</small><strong>${step.takeaway}</strong></div>
-          <details class="show-math"><summary>Show the math</summary><p class="live-equation">${step.math}</p></details>
-          <aside class="common-trap"><strong>Common trap</strong><p>${step.trap}</p></aside>
-        </section>
-      ` : ""}
-
+    <section class="course-step guided-phase-${phase}" aria-labelledby="course-step-title">
+      <div class="guided-instruction">
+        <h1 id="course-step-title">${phaseTitle(phase, activeIndex)}</h1>
+        ${phaseBody(phase, activeIndex, selectedPredictionId, goalMet)}
+      </div>
       <footer class="course-step-actions">
-        <button type="button" data-action="course-previous" ${activeIndex === 0 ? "disabled" : ""}>← Previous</button>
-        <p>${!selected ? "Make a prediction to reveal the explanation." : !goalMet ? "Complete the Try it step to continue." : "Ready for the next idea."}</p>
-        <button type="button" class="course-next" data-action="course-next" ${canContinue ? "" : "disabled"}>${isLast ? "Finish course" : "Continue →"}</button>
+        <button class="course-back" type="button" data-action="course-previous" ${isFirst ? "disabled" : ""}><span aria-hidden="true">←</span> Back</button>
+        <p>${phase === "predict" && !selected ? "Choose one answer." : phase === "manipulate" && !goalMet ? "Make the change on the diagram." : `${phaseIndex + 1} of ${COURSE_PHASES.length}`}</p>
+        ${(continueReady && interactionReady) || primaryAction === "course-preset" ? `<button type="button" class="course-next" data-action="${primaryAction}">${primaryLabel}<span aria-hidden="true"> →</span></button>` : ""}
       </footer>
     </section>
   `;

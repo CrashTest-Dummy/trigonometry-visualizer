@@ -5,6 +5,7 @@ import {
   DEFAULT_PROGRESS,
   PROGRESS_STORAGE_KEY,
   loadProgress,
+  migrateProgress,
   resetProgress,
   saveProgress,
   validateProgress,
@@ -33,10 +34,10 @@ class MemoryStorage implements Storage {
 describe("versioned course progress", () => {
   it("validates known modules and removes unknown or duplicate completions", () => {
     const value = validateProgress({
-      version: 1,
+      version: 2,
       lastMode: "guided",
       moduleId: "read-vector",
-      stepId: "read-vector-345",
+      phase: "predict",
       completedStepIds: ["read-vector-345", "unknown", "read-vector-345"],
       introDismissed: true,
     });
@@ -44,9 +45,27 @@ describe("versioned course progress", () => {
   });
 
   it("rejects mismatched and unsupported stored shapes", () => {
-    expect(validateProgress({ ...DEFAULT_PROGRESS, version: 2 })).toBeNull();
-    expect(validateProgress({ ...DEFAULT_PROGRESS, stepId: "wrong" })).toBeNull();
+    expect(validateProgress({ ...DEFAULT_PROGRESS, version: 3 })).toBeNull();
+    expect(validateProgress({ ...DEFAULT_PROGRESS, phase: "wrong" })).toBeNull();
     expect(validateProgress(null)).toBeNull();
+  });
+
+  it("migrates version 1 module progress to the first microstep", () => {
+    expect(migrateProgress({
+      version: 1,
+      lastMode: "guided",
+      moduleId: "keep-signs",
+      stepId: "quadrant-signs",
+      completedStepIds: ["read-vector-345"],
+      introDismissed: true,
+    })).toEqual({
+      version: 2,
+      lastMode: "guided",
+      moduleId: "keep-signs",
+      phase: "orient",
+      completedStepIds: ["read-vector-345"],
+      introDismissed: true,
+    });
   });
 
   it("saves, loads, and resets progress", () => {

@@ -1,4 +1,4 @@
-# TrigLab — Interactive Trigonometry Visualizer
+# TrigLab: Interactive Trigonometry Visualizer
 
 TrigLab is a browser-based educational tool for rebuilding geometric intuition about trigonometry. A single draggable vector connects geometry to live ratios, trig functions, inverse functions, quadrant-aware angles, unit-circle coordinates, and real-world component problems. The language and learning path are designed for collision investigators who use components but may not have a recent mathematics background.
 
@@ -6,7 +6,7 @@ The project was motivated by crash-reconstruction work involving longitudinal an
 
 ## Three ways to use TrigLab
 
-- **Guided course** is the first-visit default. Seven short modules move from a 3–4–5 vector through ratios, inverse tangent, `atan2`, sine and cosine, optional unit-circle enrichment, and a signed Delta-V example. Every module follows Predict → Try it → Why → Investigator takeaway, with formal math behind an optional reveal.
+- **Guided course** is the first-visit default. Seven short modules move from a 3-4-5 vector through ratios, inverse tangent, `atan2`, sine and cosine, optional unit-circle enrichment, and a signed Delta-V example. Each module is a six-screen presentation: orient, notice, predict, manipulate, explain, and takeaway. One focal area and one primary action appear at a time, with formal math behind an optional reveal.
 - **Explore freely** preserves the complete eight-lesson sandbox. Lessons are grouped as Foundations, Recovering direction, and Connections without changing their controls or behavior.
 - **Quick reference** is a compact job aid for question-to-tool mapping, formulas, coordinate and quadrant checks, `atan` versus `atan2`, undefined cases, glossary terms, and convention cautions. It includes letter-size print styling.
 
@@ -23,7 +23,7 @@ Guided-course progress stays only in the current browser under `triglab.learning
 - Unit circle with radius fixed to one, where `x = cos(θ)` and `y = sin(θ)`
 - Delta-V / PDOF connection with longitudinal, lateral, resultant, and direction calculations
 
-The vector can be changed by dragging its endpoint, using the keyboard, entering X and Y components, moving the angle slider, entering an angle, or choosing a special-angle shortcut. Angles can be shown as 0–360° or −180–180°.
+The vector can be changed by dragging its endpoint, using the keyboard, entering X and Y components, moving the angle slider, entering an angle, or choosing a special-angle shortcut. Angles can be shown as 0 to 360° or −180 to 180°.
 
 Every lesson uses the same visual language: X is blue, Y is coral, the resultant is green, and the angle is amber. Relevant sides remain emphasized while unused geometry is visibly subdued.
 
@@ -49,7 +49,7 @@ The post-build curriculum review is documented in [the collision-investigator us
 
 The Vite build uses relative asset paths so the site works under a GitHub Pages repository subpath. [The GitHub Actions workflow](.github/workflows/deploy-pages.yml) runs the complete test suite, builds the static assets, and deploys `dist/` whenever `main` changes.
 
-If configuring a fork, select **Settings → Pages → Source → GitHub Actions**.
+If configuring a fork, select **Settings**, then **Pages**, then **Source**, then **GitHub Actions**.
 
 ## Project structure
 

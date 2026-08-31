@@ -195,13 +195,39 @@ export const renderVector = (state: VectorState, options: PlotOptions): void => 
   setAttributes(required("r-label"), rLabel);
   const deltaMode = options.lesson === "delta-v";
   const unitCircleMode = options.lesson === "unit-circle";
+  const guidedMode = document.body.dataset.mode === "guided";
+  const plot = required<SVGSVGElement>("vector-plot");
+  if (guidedMode && !unitCircleMode && magnitude > 0) {
+    const spanX = Math.abs(endpoint.x - origin.x);
+    const spanY = Math.abs(endpoint.y - origin.y);
+    const width = Math.max(300, spanX + 160);
+    const height = Math.max(240, spanY + 140);
+    const centerX = (origin.x + endpoint.x) / 2;
+    const centerY = (origin.y + endpoint.y) / 2;
+    plot.setAttribute("viewBox", `${centerX - width / 2} ${centerY - height / 2} ${width} ${height}`);
+  } else {
+    plot.setAttribute("viewBox", `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`);
+  }
+  for (const markerId of ["x-arrow", "y-arrow", "r-arrow"]) {
+    const marker = required<SVGMarkerElement>(markerId);
+    marker.setAttribute("markerWidth", guidedMode ? "3.2" : "5");
+    marker.setAttribute("markerHeight", guidedMode ? "3.2" : "5");
+  }
   required<SVGTextElement>("x-label").textContent = unitCircleMode
     ? `x = cos θ = ${format(state.x)}`
-    : `${deltaMode ? "ΔVx" : "X"} = ${format(state.x)}`;
+    : deltaMode
+      ? `ΔVx = ${format(state.x)}`
+      : guidedMode ? `${format(state.x)} horizontal` : `X = ${format(state.x)}`;
   required<SVGTextElement>("y-label").textContent = unitCircleMode
     ? `y = sin θ = ${format(state.y)}`
-    : `${deltaMode ? "ΔVy" : "Y"} = ${format(state.y)}`;
-  required<SVGTextElement>("r-label").textContent = `${deltaMode ? "Resultant" : unitCircleMode ? "R" : "R"} = ${format(magnitude)}`;
+    : deltaMode
+      ? `ΔVy = ${format(state.y)}`
+      : guidedMode ? `${format(state.y)} vertical` : `Y = ${format(state.y)}`;
+  required<SVGTextElement>("r-label").textContent = deltaMode
+    ? `Resultant = ${format(magnitude)}`
+    : unitCircleMode
+      ? `R = ${format(magnitude)}`
+      : guidedMode ? `${format(magnitude)} resultant` : `R = ${format(magnitude)}`;
   required<SVGTextElement>("y-label").setAttribute("text-anchor", state.x >= 0 ? "start" : "end");
   required<SVGTextElement>("r-label").setAttribute("text-anchor", "middle");
 
@@ -212,7 +238,6 @@ export const renderVector = (state: VectorState, options: PlotOptions): void => 
   required<SVGTextElement>("coordinate-label").textContent = `(${format(state.x)}, ${format(state.y)})`;
   required<SVGCircleElement>("endpoint-hit").setAttribute("aria-valuetext", `X ${format(state.x)}, Y ${format(state.y)}`);
 
-  const plot = required<SVGSVGElement>("vector-plot");
   plot.dataset.lesson = options.lesson;
   plot.dataset.relation = options.lesson === "inverse" ? options.relation : options.lesson;
   required<SVGTitleElement>("plot-title").textContent = deltaMode

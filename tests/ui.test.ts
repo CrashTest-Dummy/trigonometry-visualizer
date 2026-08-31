@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { COURSE_MODULES } from "../src/ui/course";
 import { PROGRESS_STORAGE_KEY } from "../src/ui/progress";
 
 class MemoryStorage implements Storage {
@@ -42,6 +43,10 @@ const text = (selector: string): string => {
 
 const openExplore = (): void => click('[data-app-mode="explore"]');
 
+const guidedInteractionCount = (): number => document.querySelectorAll(
+  "#lesson-panel button, #lesson-panel summary, #lesson-panel input, #lesson-panel select",
+).length;
+
 describe("TrigLab interface", () => {
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -59,66 +64,111 @@ describe("TrigLab interface", () => {
 
   it("opens the seven-module Guided course on a first visit", () => {
     expect(document.querySelector('[data-app-mode="guided"]')?.getAttribute("aria-pressed")).toBe("true");
-    expect(document.querySelectorAll(".course-module-list button")).toHaveLength(7);
-    expect(text("#course-step-title")).toBe("Three measurements, one geometry");
+    expect(document.querySelectorAll(".guided-progress li")).toHaveLength(6);
+    expect(text("#course-step-title")).toBe("Read a vector");
     expect(text("#r-readout")).toBe("11.18");
-    expect(document.querySelectorAll("#roadmap li")).toHaveLength(5);
-    expect(text("#roadmap")).toContain("Geometry");
-    expect(text("#roadmap")).toContain("Field application");
+    expect(document.querySelector<HTMLElement>(".mode-switch")?.hidden).toBe(true);
+    expect(document.querySelector<HTMLElement>("#learning-bridge")?.hidden).toBe(true);
+    expect(document.body.dataset.guidedPhase).toBe("orient");
+    expect(guidedInteractionCount()).toBeLessThanOrEqual(3);
   });
 
   it("gives constructive, unscored feedback and gates course progression", () => {
-    click('[data-prediction="shorter"]');
+    click('[data-action="course-next"]');
+    click('[data-action="course-next"]');
+    expect(document.body.dataset.guidedPhase).toBe("predict");
+    expect(document.querySelectorAll("[data-prediction]")).toHaveLength(2);
+    expect(document.querySelector('[data-action="course-next"]')).toBeNull();
+    click('[data-prediction="not-longer"]');
     expect(text(".prediction-feedback")).toContain("not a score");
-    expect(document.querySelector<HTMLButtonElement>('[data-action="course-next"]')?.disabled).toBe(true);
+    expect(document.querySelector('[data-action="course-next"]')).not.toBeNull();
+    click('[data-action="retry-prediction"]');
+    click('[data-prediction="longer"]');
+    expect(document.querySelector(".prediction-feedback.is-correct")).not.toBeNull();
+    click('[data-action="course-next"]');
     click('[data-action="course-preset"]');
     expect(text("#r-readout")).toBe("5.00");
-    expect(document.querySelector<HTMLButtonElement>('[data-action="course-next"]')?.disabled).toBe(false);
+    expect(text(".goal-status")).toContain("target relationship");
     click('[data-action="course-next"]');
-    expect(text("#course-step-title")).toBe("A ratio describes direction without size");
-    expect(JSON.parse(storage.getItem(PROGRESS_STORAGE_KEY)!).completedStepIds).toContain("read-vector-345");
+    expect(text("#course-step-title")).toBe("Why it works");
   });
 
-  it("provides every module, prediction feedback path, preset, and explanation", () => {
+  it("walks through every microstep, feedback path, interaction gate, and module", () => {
     for (let moduleIndex = 0; moduleIndex < 7; moduleIndex += 1) {
-      click(`[data-course-module="${moduleIndex}"]`);
-      const options = [...document.querySelectorAll<HTMLButtonElement>("[data-prediction]")];
-      expect(options.length).toBeGreaterThanOrEqual(2);
-      for (const option of options) {
-        option.click();
-        expect(text(".prediction-feedback").length).toBeGreaterThan(20);
-        expect(text(".investigator-takeaway")).toContain("Investigator takeaway");
-        expect(document.querySelector(".show-math")).not.toBeNull();
-        expect(text(".common-trap")).toContain("Common trap");
-      }
+      const module = COURSE_MODULES[moduleIndex];
+      expect(text("#course-step-title")).toBe(module.title);
+      expect(document.body.dataset.guidedPhase).toBe("orient");
+      expect(guidedInteractionCount()).toBeLessThanOrEqual(3);
+
+      click('[data-action="course-next"]');
+      expect(text("#course-step-title")).toBe(module.step.title);
+      expect(document.body.dataset.guidedPhase).toBe("notice");
+      expect(document.querySelector(".definitions")).not.toBeNull();
+      expect(guidedInteractionCount()).toBeLessThanOrEqual(3);
+
+      click('[data-action="course-next"]');
+      expect(document.body.dataset.guidedPhase).toBe("predict");
+      expect(document.querySelectorAll("[data-prediction]")).toHaveLength(2);
+      const wrong = module.step.predictions.find((option) => !option.correct)!;
+      const correct = module.step.predictions.find((option) => option.correct)!;
+      click(`[data-prediction="${wrong.id}"]`);
+      expect(text(".prediction-feedback")).toContain("not a score");
+      expect(guidedInteractionCount()).toBeLessThanOrEqual(3);
+      click('[data-action="retry-prediction"]');
+      click(`[data-prediction="${correct.id}"]`);
+      expect(document.querySelector(".prediction-feedback.is-correct")).not.toBeNull();
+      click('[data-action="course-next"]');
+
+      expect(document.body.dataset.guidedPhase).toBe("manipulate");
+      expect(document.querySelector('[data-action="course-next"]')).toBeNull();
       click('[data-action="course-preset"]');
       expect(text(".goal-status")).toContain("target relationship");
-      expect(document.querySelector<HTMLButtonElement>('[data-action="course-next"]')?.disabled).toBe(false);
+      expect(guidedInteractionCount()).toBeLessThanOrEqual(3);
+      click('[data-action="course-next"]');
+
+      expect(document.body.dataset.guidedPhase).toBe("explain");
+      expect(document.querySelector(".show-math")).not.toBeNull();
+      expect(guidedInteractionCount()).toBeLessThanOrEqual(3);
+      click('[data-action="course-next"]');
+
+      expect(document.body.dataset.guidedPhase).toBe("takeaway");
+      expect(text(".investigator-takeaway")).toContain("Investigator takeaway");
+      expect(text(".common-trap")).toContain("Common trap");
+      expect(guidedInteractionCount()).toBeLessThanOrEqual(3);
+      click('[data-action="course-next"]');
     }
+    expect(text("#course-step-title")).toBe("You crossed the complete bridge.");
+    expect(JSON.parse(storage.getItem(PROGRESS_STORAGE_KEY)!).completedStepIds).toHaveLength(7);
   });
 
-  it("resumes the last Guided module without retaining prediction answers", async () => {
-    click('[data-action="dismiss-intro"]');
-    click('[data-course-module="3"]');
-    click('[data-prediction="yes"]');
+  it("resumes the exact microstep without retaining prediction answers", async () => {
+    click('[data-action="course-next"]');
+    click('[data-action="course-next"]');
+    click('[data-prediction="longer"]');
+    click('[data-action="course-next"]');
+    expect(document.body.dataset.guidedPhase).toBe("manipulate");
     await boot();
-    expect(text("#course-step-title")).toBe("The ratio alone loses the quadrant");
+    expect(text("#course-step-title")).toBe("Put it on the diagram");
+    expect(document.body.dataset.guidedPhase).toBe("manipulate");
+    click('[data-action="course-previous"]');
+    expect(document.querySelectorAll("[data-prediction]")).toHaveLength(2);
     expect(document.querySelector(".prediction-feedback")).toBeNull();
-    expect(document.querySelector<HTMLElement>("#guided-orientation")?.hidden).toBe(true);
   });
 
   it("falls back safely from corrupt progress and resets course progress", async () => {
     storage.setItem(PROGRESS_STORAGE_KEY, "{broken");
     await boot();
-    expect(text("#course-step-title")).toBe("Three measurements, one geometry");
-    click('[data-course-module="4"]');
+    expect(text("#course-step-title")).toBe("Read a vector");
+    click('[data-action="course-next"]');
+    click(".exit-guided");
     click('[data-action="reset-course"]');
-    expect(text("#course-step-title")).toBe("Three measurements, one geometry");
+    expect(text("#course-step-title")).toBe("Read a vector");
     expect(storage.getItem(PROGRESS_STORAGE_KEY)).toBeNull();
-    expect(document.querySelector("#roadmap li")?.getAttribute("data-state")).toBe("current");
+    expect(document.body.dataset.guidedPhase).toBe("orient");
   });
 
   it("preserves the canonical vector while switching modes", () => {
+    click(".exit-guided");
     input("#x-input", "3");
     input("#y-input", "4");
     click('[data-app-mode="reference"]');
