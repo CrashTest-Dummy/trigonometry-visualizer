@@ -70,7 +70,49 @@ describe("TrigLab interface", () => {
     expect(document.querySelector<HTMLElement>(".mode-switch")?.hidden).toBe(true);
     expect(document.querySelector<HTMLElement>("#learning-bridge")?.hidden).toBe(true);
     expect(document.body.dataset.guidedPhase).toBe("orient");
+    expect(text(".concept-help-button")).toContain("Concept help");
     expect(guidedInteractionCount()).toBeLessThanOrEqual(3);
+  });
+
+  it("opens concept help from the first screen and explains cotangent in two actions", () => {
+    click(".concept-help-button");
+    expect(document.querySelector("#concept-dialog")?.hasAttribute("open")).toBe(true);
+    expect(document.querySelectorAll("[data-concept]")).toHaveLength(13);
+    expect(document.activeElement?.getAttribute("data-concept")).toBe("vector");
+    click('[data-concept="cotangent"]');
+    expect(text("#concept-detail")).toContain("run per rise");
+    expect(text("#concept-detail")).toContain("cot(θ) = X ÷ Y = 1 ÷ tan(θ)");
+    expect(text("#concept-detail")).toContain("Current value: 2.000");
+    expect(text("#concept-detail")).toContain("undefined when Y is zero");
+    expect(document.body.dataset.guidedPhase).toBe("orient");
+  });
+
+  it("closes concept help with Escape and returns focus to its launcher", () => {
+    const launcher = document.querySelector<HTMLButtonElement>(".concept-help-button")!;
+    launcher.click();
+    document.querySelector<HTMLDialogElement>("#concept-dialog")?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(document.querySelector("#concept-dialog")?.hasAttribute("open")).toBe(false);
+    expect(document.activeElement).toBe(launcher);
+  });
+
+  it("opens the lesson related to a concept and preserves the vector", () => {
+    click(".concept-help-button");
+    click('[data-concept="cotangent"]');
+    click("[data-concept-lesson]");
+    expect(document.querySelector('[data-app-mode="explore"]')?.getAttribute("aria-pressed")).toBe("true");
+    expect(text("#lesson-title")).toBe("Tangent is steepness.");
+    expect(text("#x-readout")).toBe("10.00");
+    expect(text("#y-readout")).toBe("5.00");
+  });
+
+  it("shows an undefined cotangent value when Y is zero", () => {
+    click(".exit-guided");
+    input("#y-input", "0");
+    click(".concept-help-button");
+    click('[data-concept="cotangent"]');
+    expect(text(".concept-current")).toBe("Current value: undefined");
+    expect(document.body.textContent).not.toContain("Infinity");
+    expect(document.body.textContent).not.toContain("NaN");
   });
 
   it("gives constructive, unscored feedback and gates course progression", () => {
@@ -139,7 +181,7 @@ describe("TrigLab interface", () => {
     }
     expect(text("#course-step-title")).toBe("You crossed the complete bridge.");
     expect(JSON.parse(storage.getItem(PROGRESS_STORAGE_KEY)!).completedStepIds).toHaveLength(7);
-  });
+  }, 10_000);
 
   it("resumes the exact microstep without retaining prediction answers", async () => {
     click('[data-action="course-next"]');

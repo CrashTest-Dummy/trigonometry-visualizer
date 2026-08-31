@@ -69,6 +69,10 @@ body[data-mode="guided"] .intro h1 { max-width: 24ch; font-size: clamp(1.95rem, 
 .brand-mark i::after { position: absolute; right: -1px; top: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--r); content: ""; }
 .header-context { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 0.78rem; font-weight: 700; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--r); box-shadow: 0 0 0 4px var(--r-soft); }
+.header-actions { display: flex; align-items: center; gap: 18px; }
+.concept-help-button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1px solid #bfc9d7; border-radius: 9px; background: white; color: var(--ink); font-size: .72rem; font-weight: 820; cursor: pointer; }
+.concept-help-button span { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; background: var(--x-soft); color: var(--x); font-weight: 900; }
+.concept-help-button:hover { border-color: var(--x); background: #f8fbff; }
 
 main { width: min(1440px, 100%); margin: 0 auto; padding: 0 clamp(16px, 4vw, 64px) 40px; }
 .intro { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr); align-items: end; gap: 56px; padding: clamp(42px, 6vw, 82px) 0 44px; }
@@ -437,16 +441,16 @@ body[data-mode="guided"] .grid-lines { opacity: .38; }
 body[data-mode="guided"] .axis-ticks,
 body[data-mode="guided"] .quadrant-labels,
 body[data-mode="guided"] .coordinate-label { opacity: .34; }
-body[data-mode="guided"] .component-label { font-size: 8.5px; stroke-width: 4px; }
+body[data-mode="guided"] .component-label { font-size: 8.5px; stroke-width: 2.5px; }
 body[data-mode="guided"] #x-component,
-body[data-mode="guided"] #y-component { stroke-width: 3.5; }
-body[data-mode="guided"] #resultant { stroke-width: 4.5; }
-body[data-mode="guided"] #angle-label { font-size: 8px; stroke-width: 3px; }
-body[data-mode="guided"] #angle-arc { stroke-width: 2; }
-body[data-mode="guided"] .coordinate-label { font-size: 7px; stroke-width: 3px; }
+body[data-mode="guided"] #y-component { stroke-width: 2.4; }
+body[data-mode="guided"] #resultant { stroke-width: 2.9; }
+body[data-mode="guided"] #angle-label { font-size: 8px; stroke-width: 1.8px; }
+body[data-mode="guided"] #angle-arc { stroke-width: 1.25; }
+body[data-mode="guided"] .coordinate-label { font-size: 7px; stroke-width: 2px; }
 body[data-mode="guided"] .axis-ticks text { font-size: 6px; }
-body[data-mode="guided"] .endpoint-dot { r: 6px; stroke-width: 3; }
-body[data-mode="guided"] .endpoint-pulse { r: 12px; }
+body[data-mode="guided"] .endpoint-dot { r: 5px; stroke-width: 2; }
+body[data-mode="guided"] .endpoint-pulse { r: 10px; }
 body[data-mode="guided"][data-guided-phase="orient"] .plot-card,
 body[data-mode="guided"][data-guided-phase="takeaway"] .plot-card,
 body[data-mode="guided"][data-guided-phase="complete"] .plot-card { opacity: .28; filter: grayscale(.35); }
@@ -475,6 +479,31 @@ body[data-mode="guided"] .course-step-actions p { color: var(--muted); font-size
 body[data-mode="guided"] .lesson-panel > .definitions { align-self: end; margin: 10px 0 0; padding: 0 18px 12px; border: 1px solid var(--line); border-radius: 9px; background: white; }
 body[data-mode="guided"] .lesson-panel:has(> .definitions) .course-step { height: 100%; }
 .completion-check { display: grid; width: 54px; height: 54px; margin-bottom: 24px; place-items: center; border-radius: 50%; background: var(--r); color: white; font-size: 1.5rem; font-weight: 900; }
+
+.concept-dialog { width: min(980px,calc(100vw - 32px)); max-width: none; max-height: min(760px,calc(100vh - 32px)); padding: 0; border: 0; border-radius: 16px; background: white; color: var(--ink); box-shadow: 0 28px 80px rgba(20,34,58,.28); }
+.concept-dialog::backdrop { background: rgba(20,34,58,.46); backdrop-filter: blur(2px); }
+.concept-dialog-shell { display: grid; grid-template-rows: auto minmax(0,1fr); max-height: min(760px,calc(100vh - 32px)); }
+.concept-dialog-header { display: flex; align-items: start; justify-content: space-between; gap: 24px; padding: 25px 28px 20px; border-bottom: 1px solid var(--line); }
+.concept-dialog-header .eyebrow { margin-bottom: 5px; }
+.concept-dialog-header h2 { margin: 0; font-size: clamp(1.55rem,3vw,2.25rem); letter-spacing: -.045em; }
+.concept-dialog-close { flex: 0 0 auto; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 50%; background: white; color: var(--ink); font-size: 1.6rem; line-height: 1; cursor: pointer; }
+.concept-dialog-body { display: grid; grid-template-columns: minmax(220px,280px) minmax(0,1fr); min-height: 0; }
+.concept-list { display: grid; align-content: start; gap: 7px; max-height: 620px; padding: 18px; overflow-y: auto; border-right: 1px solid var(--line); background: #f7f9fc; }
+.concept-list button { display: grid; min-height: 52px; padding: 9px 12px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.concept-list button strong { font-size: .76rem; }
+.concept-list button small { margin-top: 2px; color: var(--muted); font-size: .61rem; }
+.concept-list button:hover,.concept-list button[aria-pressed="true"] { border-color: #bfd3f1; background: white; box-shadow: 0 3px 10px rgba(20,34,58,.06); }
+.concept-list button[aria-pressed="true"] strong { color: var(--x); }
+.concept-detail { min-height: 440px; padding: clamp(28px,5vw,54px); overflow-y: auto; }
+.concept-empty { max-width: 38ch; margin: 100px auto; color: var(--muted); font-size: 1rem; line-height: 1.65; text-align: center; }
+.concept-detail h3 { margin: 0 0 18px; font-size: clamp(2rem,4vw,3.4rem); letter-spacing: -.055em; line-height: 1; }
+.concept-plain { max-width: 44ch; margin: 0 0 22px; color: #34445d; font-size: 1rem; line-height: 1.65; }
+.concept-formula { display: block; width: fit-content; max-width: 100%; margin-bottom: 12px; padding: 15px 17px; border: 1px solid #dbe3ee; border-radius: 9px; background: #f6f8fb; color: var(--ink); font-size: clamp(.86rem,2vw,1.08rem); font-weight: 800; overflow-wrap: anywhere; }
+.concept-current { display: block; margin-bottom: 24px; color: var(--r); font-size: .82rem; }
+.concept-reciprocal,.concept-edge { display: grid; gap: 4px; max-width: 48ch; margin: 14px 0 0; padding: 14px 16px; border-radius: 9px; font-size: .75rem; line-height: 1.55; }
+.concept-reciprocal { border: 1px solid #b9ddcf; background: var(--r-soft); color: #215c48; }
+.concept-edge { border: 1px solid #e7cb92; background: #fff9ec; color: #70501e; }
+.concept-lesson-link { min-height: 48px; margin-top: 24px; padding: 0 17px; border: 0; border-radius: 8px; background: var(--r); color: white; font-size: .72rem; font-weight: 850; cursor: pointer; }
 
 @media (min-width: 721px) and (max-width: 1080px) {
   body[data-mode="guided"] .workspace { grid-template-columns: minmax(0,1.35fr) minmax(310px,.9fr); }
@@ -512,6 +541,29 @@ body[data-mode="guided"] .lesson-panel:has(> .definitions) .course-step { height
   body[data-mode="guided"] .course-step-actions p { grid-column: 2; grid-row: 1; }
   body[data-mode="guided"] .course-step-actions button { grid-row: 1; }
   body[data-mode="guided"] .definitions dl div { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .site-header { padding-inline: 16px; }
+  .header-actions { gap: 8px; }
+  .header-context { display: none; }
+  .concept-help-button { padding: 0 10px; font-size: .67rem; }
+  body[data-mode="guided"] .concept-help-button span { display: none; }
+  .concept-dialog { width: calc(100vw - 16px); max-height: calc(100vh - 16px); border-radius: 12px; }
+  .concept-dialog-shell { max-height: calc(100vh - 16px); }
+  .concept-dialog-header { padding: 18px 18px 14px; }
+  .concept-dialog-header h2 { max-width: 12ch; font-size: 1.55rem; }
+  .concept-dialog-body { grid-template-columns: minmax(132px,40%) minmax(0,1fr); }
+  .concept-list { max-height: none; padding: 10px; }
+  .concept-list button { min-height: 48px; padding: 8px; }
+  .concept-list button strong { font-size: .68rem; }
+  .concept-list button small { font-size: .55rem; }
+  .concept-detail { min-height: 0; padding: 22px 16px; }
+  .concept-empty { margin: 70px auto; font-size: .84rem; }
+  .concept-detail h3 { font-size: 2rem; }
+  .concept-plain { font-size: .84rem; line-height: 1.55; }
+  .concept-reciprocal,.concept-edge { padding: 11px; font-size: .67rem; }
+  .concept-lesson-link { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

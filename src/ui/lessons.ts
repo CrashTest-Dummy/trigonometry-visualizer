@@ -25,7 +25,7 @@ export const LESSONS: LessonDefinition[] = [
   { id: "cosine", number: "03", shortLabel: "Cosine" },
   { id: "tangent", number: "04", shortLabel: "Tangent" },
   { id: "inverse", number: "05", shortLabel: "Inverse trig" },
-  { id: "quadrants", number: "06", shortLabel: "atan2" },
+  { id: "quadrants", number: "06", shortLabel: "Signed direction" },
   { id: "unit-circle", number: "07", shortLabel: "Unit circle" },
   { id: "delta-v", number: "08", shortLabel: "Delta-V / PDOF" },
 ];

@@ -12,6 +12,8 @@ The project was motivated by crash-reconstruction work involving longitudinal an
 
 Guided-course progress stays only in the current browser under `triglab.learning.v1`. Prediction choices are never stored or scored, and a visible reset action clears course progress.
 
+The persistent **Concept help** control explains the relationships without changing course progress. It covers vector magnitude, sine, cosine, tangent, cotangent, secant, cosecant, inverse trig, `atan2`, and the unit circle. Each entry gives a plain-language meaning, formula, current value, undefined case, and a link to the related Explore lesson.
+
 ## Lessons and interactions
 
 - Triangle basics and the Pythagorean relationship

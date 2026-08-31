@@ -17,6 +17,7 @@ import {
   type CoursePhase,
   type InteractionGoal,
 } from "./ui/course";
+import { conceptById, conceptDetailMarkup, conceptDialogMarkup } from "./ui/concepts";
 import { LESSONS, lessonMarkup, updateLessonValues } from "./ui/lessons";
 import { loadProgress, resetProgress, saveProgress, type CourseProgress } from "./ui/progress";
 import { definitionsMarkup, referenceMarkup } from "./ui/reference";
@@ -55,8 +56,11 @@ let selectedPredictionId: string | null = null;
 app.innerHTML = `
   <header class="site-header">
     <a class="brand" href="#top" aria-label="TrigLab home"><span class="brand-mark" aria-hidden="true"><i></i></span><span>TRIG<span>/</span>LAB</span></a>
-    <div class="header-context"><span class="status-dot" aria-hidden="true"></span>Interactive geometry · ratios · vectors</div>
-    <button class="exit-guided" type="button" data-action="exit-guided" hidden>Exit guided course</button>
+    <div class="header-actions">
+      <div class="header-context"><span class="status-dot" aria-hidden="true"></span>Interactive geometry · ratios · vectors</div>
+      <button class="concept-help-button" type="button" data-action="open-concepts"><span aria-hidden="true">?</span> Concept help</button>
+      <button class="exit-guided" type="button" data-action="exit-guided" hidden>Exit guided course</button>
+    </div>
   </header>
 
   <main id="top">
@@ -137,6 +141,7 @@ app.innerHTML = `
       <p>PDOF and vehicle-coordinate conventions can differ. Follow validated tools, applicable standards, agency procedures, manufacturer documentation, and EDR documentation for reconstruction work.</p>
     </footer>
   </main>
+  ${conceptDialogMarkup()}
   <div class="sr-only" id="live-values" aria-live="polite"></div>
 `;
 
@@ -150,6 +155,7 @@ let lastMagnitude = vectorMagnitude(vector.x, vector.y);
 let magnitudeBeforeUnitCircle = lastMagnitude;
 let hasDragged = false;
 let courseInteractionOccurred = false;
+let conceptOpener: HTMLElement | null = null;
 
 const required = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -465,6 +471,30 @@ const setAppMode = (nextMode: AppMode): void => {
   render(true);
 };
 
+const conceptDialog = required<HTMLDialogElement>("#concept-dialog");
+
+const openConceptDialog = (opener?: HTMLElement): void => {
+  conceptOpener = opener ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  if (typeof conceptDialog.showModal === "function") conceptDialog.showModal();
+  else conceptDialog.setAttribute("open", "");
+  conceptDialog.querySelector<HTMLButtonElement>("[data-concept]")?.focus();
+};
+
+const closeConceptDialog = (): void => {
+  if (typeof conceptDialog.close === "function") conceptDialog.close();
+  else conceptDialog.removeAttribute("open");
+  conceptOpener?.focus();
+};
+
+const showConcept = (id: string): void => {
+  const concept = conceptById(id);
+  if (!concept) return;
+  required<HTMLElement>("#concept-detail").innerHTML = conceptDetailMarkup(concept, vector);
+  conceptDialog.querySelectorAll<HTMLButtonElement>("[data-concept]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.concept === id));
+  });
+};
+
 const plot = required<SVGSVGElement>("#vector-plot");
 const endpointHit = required<SVGCircleElement>("#endpoint-hit");
 
@@ -644,6 +674,43 @@ required<HTMLElement>("#learning-bridge").addEventListener("click", (event) => {
 });
 
 required<HTMLButtonElement>(".exit-guided").addEventListener("click", () => setAppMode("explore"));
+
+document.querySelectorAll<HTMLButtonElement>('[data-action="open-concepts"]').forEach((button) => {
+  button.addEventListener("click", () => openConceptDialog(button));
+});
+
+conceptDialog.addEventListener("click", (event) => {
+  const target = event.target;
+  if (!(target instanceof Element)) return;
+  const conceptButton = target.closest<HTMLButtonElement>("[data-concept]");
+  if (conceptButton?.dataset.concept) {
+    showConcept(conceptButton.dataset.concept);
+    return;
+  }
+  if (target.closest('[data-action="close-concepts"]')) {
+    closeConceptDialog();
+    return;
+  }
+  const lessonButton = target.closest<HTMLButtonElement>("[data-concept-lesson]");
+  if (!lessonButton?.dataset.conceptLesson) return;
+  const nextLesson = lessonButton.dataset.conceptLesson as Lesson;
+  const nextRelation = lessonButton.dataset.conceptRelation as Relation | undefined;
+  closeConceptDialog();
+  setAppMode("explore");
+  selectLesson(nextLesson);
+  if (nextRelation) {
+    relation = nextRelation;
+    updateLessonPanel();
+    render(true);
+  }
+});
+
+conceptDialog.addEventListener("close", () => conceptOpener?.focus());
+conceptDialog.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  event.preventDefault();
+  closeConceptDialog();
+});
 
 required<HTMLElement>("#reference-view").addEventListener("click", (event) => {
   const target = event.target;
