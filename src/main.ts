@@ -64,6 +64,12 @@ app.innerHTML = `
   </header>
 
   <main id="top">
+    <aside class="guided-exit-cue" id="guided-exit-cue" aria-labelledby="guided-exit-cue-copy" hidden>
+      <span class="exit-cue-arrow" aria-hidden="true">↗</span>
+      <p id="guided-exit-cue-copy"><strong>You can leave this walkthrough at any time.</strong><span>Choose Exit guided course to open Explore freely. Your course progress stays saved in this browser.</span></p>
+      <button type="button" data-action="dismiss-exit-cue">Got it</button>
+    </aside>
+
     <nav class="mode-switch" aria-label="Choose how to use TrigLab">
       <button type="button" data-app-mode="guided" aria-pressed="${appMode === "guided"}"><span aria-hidden="true">◎</span><b>Guided course</b><small>Build intuition step by step</small></button>
       <button type="button" data-app-mode="explore" aria-pressed="${appMode === "explore"}"><span aria-hidden="true">↗</span><b>Explore freely</b><small>Use the complete sandbox</small></button>
@@ -73,11 +79,6 @@ app.innerHTML = `
     <section class="intro" id="mode-intro" aria-labelledby="page-title">
       <div><p class="eyebrow" id="intro-eyebrow">Guided course</p><h1 id="page-title">You already work with components.<br /><em>This course shows the picture behind them.</em></h1></div>
       <p class="intro-copy" id="intro-copy">Predict what will happen, manipulate the vector, then check the geometry. There are no scores, just a clearer mental picture.</p>
-    </section>
-
-    <section class="guided-orientation" id="guided-orientation" hidden>
-      <div><p class="card-kicker">Before you begin</p><h2>This is a seven-part visual briefing, not a math test.</h2><p>Each module asks for a prediction, lets you move the geometry, and then explains why the result makes sense. Your progress stays only in this browser.</p></div>
-      <button type="button" data-action="dismiss-intro">Start with the geometry →</button>
     </section>
 
     <div id="guided-navigation">${courseNavigationMarkup(activeCourseIndex, activePhaseIndex, progress.completedStepIds)}</div>
@@ -230,15 +231,21 @@ const updateModePresentation = (): void => {
   const guided = appMode === "guided";
   const explore = appMode === "explore";
   const reference = appMode === "reference";
+  const showExitCue = guided && !progress.introDismissed;
+  const exitButton = required<HTMLButtonElement>(".exit-guided");
   required<HTMLElement>(".mode-switch").hidden = guided;
   required<HTMLElement>("#mode-intro").hidden = guided || reference;
-  required<HTMLElement>("#guided-orientation").hidden = true;
+  required<HTMLElement>("#guided-exit-cue").hidden = !showExitCue;
   required<HTMLElement>("#guided-navigation").hidden = !guided;
   required<HTMLElement>("#explore-navigation").hidden = !explore;
   required<HTMLElement>(".workspace").hidden = reference;
   required<HTMLElement>("#learning-bridge").hidden = guided || reference;
   required<HTMLElement>("#reference-view").hidden = !reference;
-  required<HTMLButtonElement>(".exit-guided").hidden = !guided;
+  exitButton.hidden = !guided;
+  exitButton.classList.toggle("is-called-out", showExitCue);
+  if (showExitCue) exitButton.setAttribute("aria-describedby", "guided-exit-cue-copy");
+  else exitButton.removeAttribute("aria-describedby");
+  document.body.classList.toggle("has-exit-cue", showExitCue);
   document.body.dataset.mode = appMode;
   document.querySelectorAll<HTMLButtonElement>("[data-app-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.appMode === appMode));
@@ -471,6 +478,13 @@ const setAppMode = (nextMode: AppMode): void => {
   render(true);
 };
 
+const dismissExitCue = (): void => {
+  if (progress.introDismissed) return;
+  progress.introDismissed = true;
+  persistProgress();
+  updateModePresentation();
+};
+
 const conceptDialog = required<HTMLDialogElement>("#concept-dialog");
 
 const openConceptDialog = (opener?: HTMLElement): void => {
@@ -619,6 +633,7 @@ required<HTMLElement>("#lesson-panel").addEventListener("click", (event) => {
     previousCoursePosition();
   }
   if (actionButton?.dataset.action === "course-next" && appMode === "guided") {
+    if (activeCourseIndex === 0 && activeCoursePhase() === "orient") dismissExitCue();
     nextCoursePosition();
   }
   if (actionButton?.dataset.action === "course-finish-explore") {
@@ -648,12 +663,10 @@ required<HTMLElement>("#guided-navigation").addEventListener("click", (event) =>
   event.preventDefault();
 });
 
-required<HTMLElement>("#guided-orientation").addEventListener("click", (event) => {
+required<HTMLElement>("#guided-exit-cue").addEventListener("click", (event) => {
   const target = event.target;
-  if (!(target instanceof Element) || !target.closest('[data-action="dismiss-intro"]')) return;
-  progress.introDismissed = true;
-  persistProgress();
-  updateModePresentation();
+  if (!(target instanceof Element) || !target.closest('[data-action="dismiss-exit-cue"]')) return;
+  dismissExitCue();
 });
 
 required<HTMLElement>("#learning-bridge").addEventListener("click", (event) => {
@@ -673,7 +686,10 @@ required<HTMLElement>("#learning-bridge").addEventListener("click", (event) => {
   render(true);
 });
 
-required<HTMLButtonElement>(".exit-guided").addEventListener("click", () => setAppMode("explore"));
+required<HTMLButtonElement>(".exit-guided").addEventListener("click", () => {
+  dismissExitCue();
+  setAppMode("explore");
+});
 
 document.querySelectorAll<HTMLButtonElement>('[data-action="open-concepts"]').forEach((button) => {
   button.addEventListener("click", () => openConceptDialog(button));

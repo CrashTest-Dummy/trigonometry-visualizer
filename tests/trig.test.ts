@@ -79,7 +79,7 @@ describe("tangent, atan, and atan2", () => {
     expect(tangentFromComponents(Number.EPSILON / 2, 5)).toBeNull();
   });
 
-  it("shows why atan of a ratio loses the quadrant", () => {
+  it("shows why atan of a ratio cannot distinguish opposite directions", () => {
     const forwardRatio = tangentFromComponents(10, 5)!;
     const oppositeRatio = tangentFromComponents(-10, -5)!;
     expect(forwardRatio).toBe(oppositeRatio);
@@ -130,4 +130,3 @@ describe("sine, cosine, and inverse functions", () => {
     expect(acosDegrees(Number.NaN)).toBeNull();
   });
 });
-

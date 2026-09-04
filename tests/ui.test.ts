@@ -71,7 +71,33 @@ describe("TrigLab interface", () => {
     expect(document.querySelector<HTMLElement>("#learning-bridge")?.hidden).toBe(true);
     expect(document.body.dataset.guidedPhase).toBe("orient");
     expect(text(".concept-help-button")).toContain("Concept help");
+    expect(document.querySelector<HTMLElement>("#guided-exit-cue")?.hidden).toBe(false);
+    expect(text("#guided-exit-cue")).toContain("leave this walkthrough at any time");
+    expect(document.querySelector(".exit-guided")?.getAttribute("aria-describedby")).toBe("guided-exit-cue-copy");
+    expect(document.querySelector(".exit-guided")?.classList.contains("is-called-out")).toBe(true);
     expect(guidedInteractionCount()).toBeLessThanOrEqual(3);
+  });
+
+  it("dismisses the exit callout without losing course progress", async () => {
+    click('[data-action="dismiss-exit-cue"]');
+    expect(document.querySelector<HTMLElement>("#guided-exit-cue")?.hidden).toBe(true);
+    expect(document.querySelector(".exit-guided")?.getAttribute("aria-describedby")).toBeNull();
+    expect(JSON.parse(storage.getItem(PROGRESS_STORAGE_KEY)!).introDismissed).toBe(true);
+    await boot();
+    expect(document.querySelector<HTMLElement>("#guided-exit-cue")?.hidden).toBe(true);
+    expect(text("#course-step-title")).toBe("Read a vector");
+  });
+
+  it("dismisses the exit callout when the learner begins or exits the course", async () => {
+    click('[data-action="course-next"]');
+    expect(document.querySelector<HTMLElement>("#guided-exit-cue")?.hidden).toBe(true);
+    expect(JSON.parse(storage.getItem(PROGRESS_STORAGE_KEY)!).introDismissed).toBe(true);
+
+    storage.clear();
+    await boot();
+    click(".exit-guided");
+    expect(document.querySelector('[data-app-mode="explore"]')?.getAttribute("aria-pressed")).toBe("true");
+    expect(JSON.parse(storage.getItem(PROGRESS_STORAGE_KEY)!).introDismissed).toBe(true);
   });
 
   it("opens concept help from the first screen and explains cotangent in two actions", () => {
@@ -207,6 +233,7 @@ describe("TrigLab interface", () => {
     expect(text("#course-step-title")).toBe("Read a vector");
     expect(storage.getItem(PROGRESS_STORAGE_KEY)).toBeNull();
     expect(document.body.dataset.guidedPhase).toBe("orient");
+    expect(document.querySelector<HTMLElement>("#guided-exit-cue")?.hidden).toBe(false);
   });
 
   it("preserves the canonical vector while switching modes", () => {
@@ -294,12 +321,14 @@ describe("TrigLab interface", () => {
     expect(document.body.textContent).not.toContain("NaN");
   });
 
-  it("demonstrates atan ambiguity and quadrant-aware atan2", () => {
+  it("shows why atan can give the same result for opposite directions", () => {
     openExplore();
     input("#x-input", "-10");
     input("#y-input", "-5");
     click('[data-lesson="quadrants"]');
-    expect(text('[data-value="quadrant"]')).toBe("III");
+    expect(text("#lesson-title")).toBe("The same ratio can point two ways.");
+    expect(text("#lesson-panel")).toContain("Vectors that point opposite ways");
+    expect(text('[data-value="quadrant"]')).toBe("lower left, Quadrant III");
     expect(text('[data-value="atan"]')).toBe("26.6°");
     expect(text('[data-value="angle"]')).toBe("206.6°");
     expect(text("#roadmap li[aria-current=\"step\"]")).toContain("Direction");

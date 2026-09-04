@@ -118,14 +118,14 @@ export const lessonMarkup = (lesson: Lesson, relation: Relation): string => {
         <div class="inverse-question"><small>The reverse question</small><p>If the <strong>${names.question}</strong> ratio is <b data-value="${names.ratioSlot}">—</b>, what principal angle creates it?</p></div>
         <div class="equation-card"><small>Live inverse calculation</small>${equation(`${names.functionName}(${names.ratio}) = ${names.functionName}(<strong data-value="${names.ratioSlot}">—</strong>)`)}${equation(`principal angle = <mark class="angle-text" data-value="${names.resultSlot}">—</mark>`)}</div>
         <div class="principal-compare"><div><small>Principal inverse result</small><strong data-value="${names.resultSlot}">—</strong></div><span aria-hidden="true">→</span><div><small>Full vector direction</small><strong data-value="angle">—</strong></div></div>
-        ${explanation("↩", `<strong>Important:</strong> a single ratio may fit more than one direction. Inverse functions return a limited principal range; component signs and <code>atan2</code> recover the full quadrant.`, "inverse-note")}
+        ${explanation("↩", `<strong>Important:</strong> a single ratio may fit more than one direction. Inverse functions return one principal angle. Use the original component signs and <code>atan2</code> to tell which way the vector points.`, "inverse-note")}
       </section>`;
   }
 
   if (lesson === "quadrants") return `
     <section class="lesson-content" aria-labelledby="lesson-title">
-      <div class="lesson-heading"><p class="card-kicker">Why two inputs matter</p><h2 id="lesson-title"><code>atan</code> loses the <em>quadrant.</em></h2><p>A ratio remembers steepness, but dividing two negative components erases both signs. <code>atan2(y, x)</code> keeps them.</p></div>
-      <div class="sign-grid"><div><small>X sign</small><strong class="x-text" data-value="x-sign">—</strong></div><div><small>Y sign</small><strong class="y-text" data-value="y-sign">—</strong></div><div><small>Location</small><strong data-value="quadrant">—</strong></div></div>
+      <div class="lesson-heading"><p class="card-kicker">Why two inputs matter</p><h2 id="lesson-title">The same ratio can point <em>two ways.</em></h2><p><code>atan(Y ÷ X)</code> sees steepness, not the original X and Y signs. Vectors that point opposite ways can therefore produce the same result. <code>atan2(Y, X)</code> keeps both signs and picks the matching direction.</p></div>
+      <div class="sign-grid"><div><small>X sign</small><strong class="x-text" data-value="x-sign">—</strong></div><div><small>Y sign</small><strong class="y-text" data-value="y-sign">—</strong></div><div><small>Where it points</small><strong data-value="quadrant">—</strong></div></div>
       <div class="comparison"><div class="comparison-row"><span class="method-label">atan(y ÷ x)</span><code data-value="atan-equation">—</code><strong data-value="atan">—</strong><small>ratio only</small></div><div class="comparison-row recommended"><span class="method-label">atan2(y, x)</span><code data-value="atan2-equation">—</code><strong data-value="angle">—</strong><small>both signs</small></div></div>
       <div class="ambiguity-demo"><div class="ambiguity-heading"><p class="card-kicker">Same ratio, opposite direction</p><button type="button" data-action="flip">Flip vector 180° <span aria-hidden="true">↻</span></button></div><div class="opposite-row"><div><small>Current</small><strong data-value="pair">—</strong><span data-value="ratio-label">—</span></div><div class="direction-arrow">⇄</div><div><small>Opposite</small><strong data-value="opposite-pair">—</strong><span data-value="ratio-label">—</span></div></div><p data-value="ambiguity">—</p></div>
       ${explanation("◎", `<strong>Think of it this way:</strong> slope tells you the tilt of a road. The signs of X and Y tell you which direction you are traveling on it.`)}
@@ -162,6 +162,22 @@ const pairText = (x: number, y: number): string =>
 
 const signText = (value: number): string => value === 0 ? "zero" : value > 0 ? "positive +" : "negative −";
 
+const directionRegionText = (x: number, y: number): string => {
+  const region = getQuadrant(x, y);
+  const labels: Record<string, string> = {
+    I: "upper right, Quadrant I",
+    II: "upper left, Quadrant II",
+    III: "lower left, Quadrant III",
+    IV: "lower right, Quadrant IV",
+    "+X axis": "right on the X axis",
+    "−X axis": "left on the X axis",
+    "+Y axis": "up on the Y axis",
+    "−Y axis": "down on the Y axis",
+    origin: "at the origin",
+  };
+  return labels[region] ?? region;
+};
+
 export const updateLessonValues = (root: HTMLElement, context: LessonContext): void => {
   const { vector, angleMode } = context;
   const magnitude = vectorMagnitude(vector.x, vector.y);
@@ -190,15 +206,15 @@ export const updateLessonValues = (root: HTMLElement, context: LessonContext): v
     "tan-absolute": tangent === null ? "undefined" : format(Math.abs(tangent), 2),
     "x-sign": signText(vector.x),
     "y-sign": signText(vector.y),
-    quadrant: getQuadrant(vector.x, vector.y),
+    quadrant: directionRegionText(vector.x, vector.y),
     "atan-equation": tangent === null ? "atan(y ÷ 0)" : `atan(${format(vector.y)} ÷ ${format(vector.x)})`,
     "atan2-equation": `atan2(${format(vector.y)}, ${format(vector.x)})`,
     pair: pairText(vector.x, vector.y),
     "opposite-pair": pairText(-vector.x, -vector.y),
     "ratio-label": tangent === null ? "ratio undefined" : `ratio ${format(tangent, 3)}`,
     ambiguity: tangent === null
-      ? "With no horizontal run, the ratio is undefined. atan2 can still use both components."
-      : `atan returns ${angleText(atan, "signed")} for both vectors; atan2 places their directions 180° apart.`,
+      ? "With X equal to zero, Y ÷ X is undefined. atan2 can still give the direction because it uses X and Y directly."
+      : `Both vectors give the same atan result, ${angleText(atan, "signed")}. atan2 returns directions 180° apart because it still knows both signs.`,
     units: context.units,
   };
 
